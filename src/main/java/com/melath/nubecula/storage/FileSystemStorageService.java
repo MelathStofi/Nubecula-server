@@ -7,8 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -28,8 +33,9 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void store(MultipartFile file) {
-		String filename = StringUtils.cleanPath(file.getOriginalFilename());
+	public void store(MultipartFile file, String dir) {
+		String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+		Path currentLocation = Paths.get(this.rootLocation.toString() + dir);
 		try {
 			if (file.isEmpty()) {
 				throw new StorageException("Failed to store empty file " + filename);
@@ -41,7 +47,7 @@ public class FileSystemStorageService implements StorageService {
 								+ filename);
 			}
 			try (InputStream inputStream = file.getInputStream()) {
-				Files.copy(inputStream, this.rootLocation.resolve(filename),
+				Files.copy(inputStream, currentLocation.resolve(filename),
 					StandardCopyOption.REPLACE_EXISTING);
 			}
 		}
@@ -51,11 +57,12 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public Stream<Path> loadAll() {
+	public Set<Path> loadAll(String dir) {
+		Path location = Paths.get(this.rootLocation.toString() + "/" + dir);
 		try {
-			return Files.walk(this.rootLocation, 1)
-				.filter(path -> !path.equals(this.rootLocation))
-				.map(this.rootLocation::relativize);
+			return Files.walk(location, 1)
+				.filter(path -> !path.equals(location))
+				.map(location::relativize).collect(Collectors.toSet());
 		}
 		catch (IOException e) {
 			throw new StorageException("Failed to read stored files", e);
@@ -88,6 +95,20 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
+	public void createDirectory(String dirName, String dir) {
+		try {
+			Files.createDirectory(Paths.get(rootLocation.toString() + "/" + dir + "/" + dirName));
+		} catch (IOException e) {
+			throw new StorageException("Could not create directory", e);
+		}
+	}
+
+	@Override
+	public boolean delete(String delenda) {
+		return FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + "/" + delenda ).toFile());
+	}
+
+	@Override
 	public void deleteAll() {
 		FileSystemUtils.deleteRecursively(rootLocation.toFile());
 	}
@@ -96,6 +117,7 @@ public class FileSystemStorageService implements StorageService {
 	public void init() {
 		try {
 			Files.createDirectories(rootLocation);
+			Files.createDirectory(Paths.get(rootLocation.toString() + "/ize"));
 		}
 		catch (IOException e) {
 			throw new StorageException("Could not initialize storage", e);
