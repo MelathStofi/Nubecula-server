@@ -10,6 +10,7 @@ import com.melath.nubecula.model.ResponseObject;
 import com.melath.nubecula.storage.StorageException;
 import com.melath.nubecula.storage.StorageFileNotFoundException;
 import com.melath.nubecula.storage.StorageProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -25,6 +26,7 @@ import org.springframework.web.servlet.HandlerMapping;
 import javax.servlet.http.HttpServletRequest;
 
 @Controller
+@Slf4j
 public class FileUploadController {
 
     private final StorageService storageService;
@@ -50,12 +52,19 @@ public class FileUploadController {
             storageService.loadAll(fullPath).forEach(path -> {
                 if (Files.isDirectory(Paths.get(rootDirectory + fullPath + "/" + path.toString()))) {
                     directories.add(
-                            baseUrl + fullPath + "/" + path.getFileName().toString().replace(" ", spaceInUrl)
+                            baseUrl +
+                            fullPath +
+                            "/" +
+                            path.getFileName().toString().replace(" ", spaceInUrl)
                     );
                 }
                 else {
                     files.add(
-                            baseUrl + "/files" + fullPath + "/" + path.getFileName().toString().replace(" ", spaceInUrl)
+                            baseUrl +
+                            "/files" +
+                            fullPath +
+                            "/" +
+                            path.getFileName().toString().replace(" ", spaceInUrl)
                     );
                 }
             });
@@ -63,6 +72,7 @@ public class FileUploadController {
 
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);
+            log.error(dir + " couldn't get their files");
             return HttpStatus.NOT_FOUND;
         }
 
@@ -72,13 +82,16 @@ public class FileUploadController {
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String dir, HttpServletRequest request) {
         int magicNumber = 7;
-        String fullPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString().substring(magicNumber);
-        System.out.println(fullPath + ", dir: " + dir);
+        String fullPath = request.getAttribute(HandlerMapping
+                .PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)
+                .toString()
+                .substring(magicNumber);
         try {
             Resource file = storageService.loadAsResource(fullPath);
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"" + file.getFilename() + "\"").body(file);
         } catch (StorageFileNotFoundException e) {
+            log.error(dir + " couldn't download a file");
             return ResponseEntity.notFound().build();
         }
     }
@@ -95,6 +108,7 @@ public class FileUploadController {
             files.forEach(file -> storageService.store(file, fullPath));
             return HttpStatus.OK;
         } catch (StorageException e) {
+            log.error(dir + " couldn't upload file(s)");
             return HttpStatus.INSUFFICIENT_STORAGE;
         }
     }
@@ -107,12 +121,11 @@ public class FileUploadController {
             HttpServletRequest request
     ) {
         String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString().substring(18);
-        System.out.println(fullPath);
-        System.out.println(dir + ", " + dirname);
         try {
             storageService.createDirectory(dirname, fullPath);
             return HttpStatus.OK;
         } catch (StorageException e) {
+            log.error(dir + " couldn't create directory");
             return HttpStatus.CONFLICT;
         }
     }
@@ -122,7 +135,10 @@ public class FileUploadController {
     public HttpStatus delete(@PathVariable String dir, HttpServletRequest request) {
         String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
         if (storageService.delete(fullPath)) return HttpStatus.OK;
-        else return HttpStatus.NOT_FOUND;
+        else {
+            log.error(dir + " couldn't delete a file");
+            return HttpStatus.NOT_FOUND;
+        }
     }
 
     @PutMapping("/{dir}/**")
@@ -136,6 +152,7 @@ public class FileUploadController {
             storageService.rename(newName, fullPath);
             return HttpStatus.OK;
         } catch (StorageException e) {
+            log.error(dir + " couldn't rename a file");
             return HttpStatus.CONFLICT;
         }
     }

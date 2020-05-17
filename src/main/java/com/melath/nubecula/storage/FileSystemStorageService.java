@@ -87,12 +87,14 @@ public class FileSystemStorageService implements StorageService {
 				return resource;
 			}
 			else {
+				log.error("Could not read file: " + filename);
 				throw new StorageFileNotFoundException(
 						"Could not read file: " + filename);
 
 			}
 		}
 		catch (MalformedURLException e) {
+			log.error("Could not read file: " + filename + "due to MalformedURLException");
 			throw new StorageFileNotFoundException("Could not read file: " + filename, e);
 		}
 	}
@@ -102,7 +104,6 @@ public class FileSystemStorageService implements StorageService {
 		String fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
 		try {
 			Files.createDirectory(Paths.get(fullPath));
-			log.info("Create directory: " + dirName + " in: " + fullPath);
 		} catch (IOException e) {
 			log.error("Could not create directory in: " + fullPath);
 			throw new StorageException("Could not create directory", e);
@@ -125,7 +126,6 @@ public class FileSystemStorageService implements StorageService {
 	public void rename(String newName, String location) {
 		Path path = Paths.get(rootLocation.toString() + location);
 		try {
-			System.out.println(path);
 			Files.move(path, path.resolveSibling(newName));
 		} catch (IOException e) {
 			log.error("Couldn't rename file at " + location + " to: " + newName);
