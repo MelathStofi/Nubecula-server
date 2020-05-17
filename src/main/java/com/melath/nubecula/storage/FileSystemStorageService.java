@@ -7,13 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -23,6 +21,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@Slf4j
 public class FileSystemStorageService implements StorageService {
 
 	private final Path rootLocation;
@@ -38,10 +37,13 @@ public class FileSystemStorageService implements StorageService {
 		Path currentLocation = Paths.get(this.rootLocation.toString() + dir);
 		try {
 			if (file.isEmpty()) {
+				log.error("Failed to store empty file " + filename);
 				throw new StorageException("Failed to store empty file " + filename);
 			}
 			if (filename.contains("..")) {
 				// This is a security check
+				log.error("Cannot store file with relative path outside current directory "
+						+ filename);
 				throw new StorageException(
 						"Cannot store file with relative path outside current directory "
 								+ filename);
@@ -49,6 +51,7 @@ public class FileSystemStorageService implements StorageService {
 			try (InputStream inputStream = file.getInputStream()) {
 				Files.copy(inputStream, currentLocation.resolve(filename),
 					StandardCopyOption.REPLACE_EXISTING);
+				log.info("Successfully uploaded " + filename + " to: " + currentLocation);
 			}
 		}
 		catch (IOException e) {
@@ -96,21 +99,38 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public void createDirectory(String dirName, String dir) {
+		String fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
 		try {
-			Files.createDirectory(Paths.get(rootLocation.toString() + "/" + dir + "/" + dirName));
+			Files.createDirectory(Paths.get(fullPath));
+			log.info("Create directory: " + dirName + " in: " + fullPath);
 		} catch (IOException e) {
+			log.error("Could not create directory in: " + fullPath);
 			throw new StorageException("Could not create directory", e);
 		}
 	}
 
 	@Override
 	public boolean delete(String delenda) {
-		return FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + "/" + delenda ).toFile());
+		boolean returnValue = FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + delenda ).toFile());
+		if (returnValue) log.info("Delete: " + delenda);
+		return returnValue;
 	}
 
 	@Override
 	public void deleteAll() {
 		FileSystemUtils.deleteRecursively(rootLocation.toFile());
+	}
+
+	@Override
+	public void rename(String newName, String location) {
+		Path path = Paths.get(rootLocation.toString() + location);
+		try {
+			System.out.println(path);
+			Files.move(path, path.resolveSibling(newName));
+		} catch (IOException e) {
+			log.error("Couldn't rename file at " + location + " to: " + newName);
+			throw new StorageException("Couldn't rename file", e);
+		}
 	}
 
 	@Override

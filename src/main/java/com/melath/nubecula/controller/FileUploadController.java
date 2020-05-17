@@ -1,10 +1,7 @@
 package com.melath.nubecula.controller;
 
-import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -13,9 +10,6 @@ import com.melath.nubecula.model.ResponseObject;
 import com.melath.nubecula.storage.StorageException;
 import com.melath.nubecula.storage.StorageFileNotFoundException;
 import com.melath.nubecula.storage.StorageProperties;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -27,12 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.melath.nubecula.storage.StorageService;
 import org.springframework.web.servlet.HandlerMapping;
-import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.websocket.server.PathParam;
 
 @Controller
 public class FileUploadController {
@@ -133,6 +123,21 @@ public class FileUploadController {
         String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
         if (storageService.delete(fullPath)) return HttpStatus.OK;
         else return HttpStatus.NOT_FOUND;
+    }
+
+    @PutMapping("/{dir}/**")
+    @ResponseBody
+    public HttpStatus rename(@PathVariable String dir,
+                             @RequestParam( value = "new-name") String newName,
+                             HttpServletRequest request
+    ) {
+        String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
+        try {
+            storageService.rename(newName, fullPath);
+            return HttpStatus.OK;
+        } catch (StorageException e) {
+            return HttpStatus.CONFLICT;
+        }
     }
 
     @ExceptionHandler(StorageFileNotFoundException.class)

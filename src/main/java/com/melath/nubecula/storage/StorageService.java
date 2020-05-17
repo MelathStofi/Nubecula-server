@@ -5,7 +5,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public interface StorageService {
 
@@ -21,8 +20,10 @@ public interface StorageService {
 
     void createDirectory(String dirName, String dir);
 
-    boolean delete(String filename);
+    boolean delete(String location);
 
     void deleteAll();
+
+    void rename(String newName, String location);
 
 }
