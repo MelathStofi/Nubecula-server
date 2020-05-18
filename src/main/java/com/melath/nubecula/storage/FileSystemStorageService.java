@@ -3,10 +3,7 @@ package com.melath.nubecula.storage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -61,13 +58,16 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public Set<Path> loadAll(String dir) {
-		Path location = Paths.get(this.rootLocation.toString() + "/" + dir);
+		Path location;
+		if (dir != "") location = Paths.get(this.rootLocation.toString() + "/" + dir);
+		else location = this.rootLocation;
 		try {
 			return Files.walk(location, 1)
 				.filter(path -> !path.equals(location))
 				.map(location::relativize).collect(Collectors.toSet());
 		}
 		catch (IOException e) {
+			log.error("Failed to read stored files: " + e);
 			throw new StorageException("Failed to read stored files", e);
 		}
 
@@ -101,7 +101,9 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public void createDirectory(String dirName, String dir) {
-		String fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
+		String fullPath;
+		if (dir == "") fullPath = rootLocation.toString() + "/" + dirName;
+		else fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
 		try {
 			Files.createDirectory(Paths.get(fullPath));
 		} catch (IOException e) {
@@ -137,7 +139,6 @@ public class FileSystemStorageService implements StorageService {
 	public void init() {
 		try {
 			Files.createDirectories(rootLocation);
-			Files.createDirectory(Paths.get(rootLocation.toString() + "/ize"));
 		}
 		catch (IOException e) {
 			throw new StorageException("Could not initialize storage", e);
