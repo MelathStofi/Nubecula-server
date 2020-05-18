@@ -1,4 +1,4 @@
-package com.melath.nubecula.storage;
+package com.melath.nubecula.storage.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

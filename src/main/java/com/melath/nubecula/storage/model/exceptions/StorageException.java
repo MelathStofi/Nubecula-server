@@ -1,4 +1,4 @@
-package com.melath.nubecula.storage;
+package com.melath.nubecula.storage.model.exceptions;
 
 public class StorageException extends RuntimeException {
 

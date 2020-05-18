@@ -1,4 +1,4 @@
-package com.melath.nubecula.storage;
+package com.melath.nubecula.storage.service;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +8,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.melath.nubecula.storage.config.StorageProperties;
+import com.melath.nubecula.storage.model.exceptions.StorageException;
+import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;

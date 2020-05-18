@@ -1,4 +1,4 @@
-package com.melath.nubecula.controller;
+package com.melath.nubecula.storage.controller;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -6,10 +6,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.melath.nubecula.model.ResponseObject;
-import com.melath.nubecula.storage.StorageException;
-import com.melath.nubecula.storage.StorageFileNotFoundException;
-import com.melath.nubecula.storage.StorageProperties;
+import com.melath.nubecula.storage.model.ResponseObject;
+import com.melath.nubecula.storage.model.exceptions.StorageException;
+import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
+import com.melath.nubecula.storage.config.StorageProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.melath.nubecula.storage.StorageService;
+import com.melath.nubecula.storage.service.StorageService;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
