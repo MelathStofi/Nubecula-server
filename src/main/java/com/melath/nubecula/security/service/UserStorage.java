@@ -1,9 +1,9 @@
 package com.melath.nubecula.security.service;
 
-import com.melath.nubecula.security.model.User;
+import com.melath.nubecula.security.model.NubeculaUser;
 import com.melath.nubecula.security.model.UserCredentials;
-import com.melath.nubecula.security.model.exception.EmailAlreadyExistException;
-import com.melath.nubecula.security.model.exception.UsernameAlreadyExistException;
+import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
+import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.security.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
@@ -16,20 +16,24 @@ import java.time.LocalDate;
 @Service
 public class UserStorage {
 
-    @Autowired
-    private PasswordEncoder encoder;
+    private final PasswordEncoder encoder;
 
-    @Autowired
     UserRepository userRepository;
 
-    @Autowired
-    EmailSenderService emailSenderService;
+    private final EmailSenderService emailSenderService;
 
-    public void add(User user) {
+    @Autowired
+    public UserStorage(UserRepository userRepository, EmailSenderService emailSenderService, PasswordEncoder encoder) {
+        this.userRepository = userRepository;
+        this.emailSenderService = emailSenderService;
+        this.encoder = encoder;
+    }
+
+    public void add(NubeculaUser user) {
         userRepository.save(user);
     }
 
-    public User getByName(String name) {
+    public NubeculaUser getByName(String name) {
         return userRepository.findByUsername(name)
                 .orElseThrow(() -> new UsernameNotFoundException("Username is not found"));
     }
@@ -40,12 +44,12 @@ public class UserStorage {
         String email = userCredentials.getEmail();
 
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new UsernameAlreadyExistException();
+            throw new UsernameAlreadyExistsException();
         }
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new EmailAlreadyExistException();
+            throw new EmailAlreadyExistsException();
         }
-        userRepository.save(User
+        userRepository.save(NubeculaUser
                 .builder()
                 .username(username)
                 .password(encoder.encode(userCredentials.getPassword()))

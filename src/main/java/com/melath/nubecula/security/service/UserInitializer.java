@@ -1,5 +1,7 @@
-package com.melath.nubecula.security;
+package com.melath.nubecula.security.service;
 
+import com.melath.nubecula.security.model.NubeculaUser;
+import com.melath.nubecula.security.service.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,21 +13,21 @@ import java.time.LocalDate;
 public class UserInitializer {
 
     @Autowired
-    private AppUserStorage appUserStorage;
+    private UserStorage userStorage;
 
     @Autowired
     private PasswordEncoder encoder;
 
     @PostConstruct
     public void loadInitData() {
-        if (appUserStorage.appUserRepository.count() == 0) {
+        if (userStorage.userRepository.count() == 0) {
             loadUsers();
         }
     }
 
     private void loadUsers() {
-        appUserStorage.add(
-                AppUser.builder()
+        userStorage.add(
+                NubeculaUser.builder()
                         .username("admin")
                         .password(encoder.encode("password"))
                         .role("USER")
@@ -35,8 +37,8 @@ public class UserInitializer {
                         .build()
         );
 
-        appUserStorage.add(
-                AppUser.builder()
+        userStorage.add(
+                NubeculaUser.builder()
                         .username("username")
                         .password(encoder.encode("password"))
                         .role("USER")

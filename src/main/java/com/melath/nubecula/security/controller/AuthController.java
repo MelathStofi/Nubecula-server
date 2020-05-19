@@ -2,10 +2,10 @@ package com.melath.nubecula.security.controller;
 
 import com.melath.nubecula.security.model.SignInResponseBody;
 import com.melath.nubecula.security.model.UserCredentials;
-import com.melath.nubecula.security.model.exception.EmailAlreadyExistException;
+import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.SignOutException;
 import com.melath.nubecula.security.model.exception.SignUpException;
-import com.melath.nubecula.security.model.exception.UsernameAlreadyExistException;
+import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.security.service.JwtTokenServices;
 import com.melath.nubecula.security.service.UserStorage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,25 +37,32 @@ public class AuthController {
     private long cookieMaxAgeMinutes;
 
     @Value("${cookie.domain}")
-    private String cookiedomain;
+    private String cookieDomain;
 
-    @Autowired
     AuthenticationManager authenticationManager;
 
-    @Autowired
     JwtTokenServices jwtTokenServices;
 
-    @Autowired
     UserStorage userStorage;
+
+    @Autowired
+    public AuthController(AuthenticationManager authenticationManager,
+                          JwtTokenServices jwtTokenServices,
+                          UserStorage userStorage
+    ) {
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenServices = jwtTokenServices;
+        this.userStorage = userStorage;
+    }
 
     @PostMapping("/sign-up")
     public ResponseEntity signUp(@RequestBody UserCredentials userCredentials) {
         try {
             userStorage.signUp(userCredentials);
             return ResponseEntity.ok().body(userCredentials.getUsername());
-        } catch (EmailAlreadyExistException e) {
+        } catch (EmailAlreadyExistsException e) {
             return ResponseEntity.status(409).body(SignUpException.EMAIL);
-        } catch (UsernameAlreadyExistException e) {
+        } catch (UsernameAlreadyExistsException e) {
             return ResponseEntity.status(409).body(SignUpException.USERNAME);
         }
     }
@@ -81,7 +88,7 @@ public class AuthController {
 
     private void addTokenToCookie(HttpServletResponse response, String token) {
         ResponseCookie cookie = ResponseCookie.from("token", token)
-                .domain(cookiedomain) // should be parameterized
+                .domain(cookieDomain) // should be parameterized
                 .sameSite("Strict")  // CSRF
 //                .secure(true)
                 .maxAge(Duration.ofHours(cookieMaxAgeMinutes / 60))

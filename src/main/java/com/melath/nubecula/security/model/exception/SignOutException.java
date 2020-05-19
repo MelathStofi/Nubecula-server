@@ -5,6 +5,6 @@ import org.springframework.security.core.AuthenticationException;
 public class SignOutException extends AuthenticationException {
 
     public SignOutException() {
-        super("Error during signing out");
+        super("Error during sign out");
     }
 }

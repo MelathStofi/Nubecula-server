@@ -15,8 +15,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+
+    private final JwtTokenServices jwtTokenServices;
+
     @Autowired
-    private JwtTokenServices jwtTokenServices;
+    public SecurityConfig(JwtTokenServices jwtTokenServices) {
+        this.jwtTokenServices = jwtTokenServices;
+    }
 
     @Bean
     @Override
@@ -34,13 +39,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/**").permitAll()
                 .antMatchers("/auth/**").permitAll() // allowed by anyone
-                .antMatchers(HttpMethod.GET, "/quiz-service/categories").authenticated() // allowed only when signed in
-                .antMatchers("/quiz-service/customquizzes/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.GET, "/quiz-service/questions/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.POST, "/quiz-service/questions/add").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.PUT, "/quiz-service/questions/**").hasAuthority("ROLE_ADMIN") // allowed only when signed in
-                .antMatchers(HttpMethod.DELETE, "/quiz-service/questions/**").hasAuthority("ROLE_ADMIN") // allowed only when signed in
-                .antMatchers("/quiz-service/types/**").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.GET, "/ize/**").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.POST, "/ize/**").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/ize/**").hasAuthority("ROLE_ADMIN") // allowed only when signed in
+                .antMatchers(HttpMethod.DELETE, "/ize/**").hasAuthority("ROLE_ADMIN") // allowed only when signed in
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:
                 .and()

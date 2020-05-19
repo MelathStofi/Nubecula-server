@@ -11,16 +11,21 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class EmailSenderService {
 
-    @Autowired
+
     private JavaMailSender javaMailSender;
+
+    @Autowired
+    public EmailSenderService(JavaMailSender javaMailSender) {
+        this.javaMailSender = javaMailSender;
+    }
 
     void sendEmail(String email, String username) {
 
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setTo(email);
 
-        msg.setSubject("Welcome " + username + "!");
-        msg.setText("Thank you for registering on our site. Enjoy the quizzes! :)\n\nThe quiz.code.cool Team");
+        msg.setSubject("Resister " + username + "!");
+        msg.setText("You are now registered");
 
         try {
             javaMailSender.send(msg);
