@@ -7,7 +7,7 @@ import com.melath.nubecula.security.model.exception.SignOutException;
 import com.melath.nubecula.security.model.exception.SignUpException;
 import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.security.service.JwtTokenServices;
-import com.melath.nubecula.security.service.UserStorage;
+import com.melath.nubecula.security.service.UserStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.nio.file.FileAlreadyExistsException;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,36 +40,36 @@ public class AuthController {
     @Value("${cookie.domain}")
     private String cookieDomain;
 
-    AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-    JwtTokenServices jwtTokenServices;
+    private final JwtTokenServices jwtTokenServices;
 
-    UserStorage userStorage;
+    private final UserStorageService userStorageService;
 
     @Autowired
     public AuthController(AuthenticationManager authenticationManager,
                           JwtTokenServices jwtTokenServices,
-                          UserStorage userStorage
+                          UserStorageService userStorageService
     ) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenServices = jwtTokenServices;
-        this.userStorage = userStorage;
+        this.userStorageService = userStorageService;
     }
 
     @PostMapping("/sign-up")
-    public ResponseEntity signUp(@RequestBody UserCredentials userCredentials) {
+    public ResponseEntity<?> signUp(@RequestBody UserCredentials userCredentials) {
         try {
-            userStorage.signUp(userCredentials);
+            userStorageService.signUp(userCredentials);
             return ResponseEntity.ok().body(userCredentials.getUsername());
         } catch (EmailAlreadyExistsException e) {
             return ResponseEntity.status(409).body(SignUpException.EMAIL);
-        } catch (UsernameAlreadyExistsException e) {
+        } catch (UsernameAlreadyExistsException | FileAlreadyExistsException e) {
             return ResponseEntity.status(409).body(SignUpException.USERNAME);
         }
     }
 
     @PostMapping("/sign-in")
-    public ResponseEntity signIn(@RequestBody UserCredentials data, HttpServletResponse response) {
+    public ResponseEntity<SignInResponseBody> signIn(@RequestBody UserCredentials data, HttpServletResponse response) {
         try {
             String username = data.getUsername();
             // authenticationManager.authenticate calls loadUserByUsername in CustomUserDetailsService
@@ -87,11 +88,11 @@ public class AuthController {
     }
 
     private void addTokenToCookie(HttpServletResponse response, String token) {
-        ResponseCookie cookie = ResponseCookie.from("token", token)
+        ResponseCookie cookie = ResponseCookie.from("nubecula_token", token)
                 .domain(cookieDomain) // should be parameterized
                 .sameSite("Strict")  // CSRF
 //                .secure(true)
-                .maxAge(Duration.ofHours(cookieMaxAgeMinutes / 60))
+                .maxAge(Duration.ofMinutes(cookieMaxAgeMinutes))
                 .httpOnly(true)      // XSS
                 .path("/")
                 .build();
@@ -109,7 +110,7 @@ public class AuthController {
     }
 
     @PostMapping("/sign-out")
-    public ResponseEntity signOut(HttpServletResponse response, HttpServletRequest request) {
+    public ResponseEntity<?> signOut(HttpServletResponse response, HttpServletRequest request) {
         try {
             eraseCookie(response, request);
             return ResponseEntity.status(200).build();

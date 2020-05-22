@@ -37,12 +37,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                .antMatchers("/**").permitAll()
                 .antMatchers("/auth/**").permitAll() // allowed by anyone
-                .antMatchers(HttpMethod.GET, "/ize/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.POST, "/ize/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.PUT, "/ize/**").hasAuthority("ROLE_ADMIN") // allowed only when signed in
-                .antMatchers(HttpMethod.DELETE, "/ize/**").hasAuthority("ROLE_ADMIN") // allowed only when signed in
+                .antMatchers(HttpMethod.GET, "/**").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.POST, "/**").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/**").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.DELETE, "/**").authenticated() // allowed only when signed in
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:
                 .and()

@@ -34,7 +34,7 @@ public class FileSystemStorageService implements StorageService {
 	@Override
 	public void store(MultipartFile file, String dir) {
 		String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-		Path currentLocation = Paths.get(this.rootLocation.toString() + dir);
+		Path currentLocation = Paths.get(this.rootLocation.toString() + "/" + dir);
 		try {
 			if (file.isEmpty()) {
 				log.error("Failed to store empty file " + filename);
@@ -103,21 +103,30 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void createDirectory(String dirName, String dir) {
-		String fullPath;
-		if (dir == "") fullPath = rootLocation.toString() + "/" + dirName;
-		else fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
+	public void createDirectory(String dirName, String dir) throws FileAlreadyExistsException {
+		String fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
 		try {
 			Files.createDirectory(Paths.get(fullPath));
 		} catch (IOException e) {
 			log.error("Could not create directory in: " + fullPath);
-			throw new StorageException("Could not create directory", e);
+			throw new FileAlreadyExistsException("Could not create directory");
+		}
+	}
+
+	@Override
+	public void createDirectory(String dirName) throws FileAlreadyExistsException {
+		String fullPath = rootLocation.toString() + "/" + dirName;
+		try {
+			Files.createDirectory(Paths.get(fullPath));
+		} catch (IOException e) {
+			log.error("Could not create directory in: " + fullPath);
+			throw new FileAlreadyExistsException("Could not create directory");
 		}
 	}
 
 	@Override
 	public boolean delete(String delenda) {
-		boolean returnValue = FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + delenda ).toFile());
+		boolean returnValue = FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + "/" + delenda ).toFile());
 		if (returnValue) log.info("Delete: " + delenda);
 		return returnValue;
 	}
@@ -129,7 +138,7 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public void rename(String newName, String location) {
-		Path path = Paths.get(rootLocation.toString() + location);
+		Path path = Paths.get(rootLocation.toString() + "/" + location);
 		try {
 			Files.move(path, path.resolveSibling(newName));
 		} catch (IOException e) {

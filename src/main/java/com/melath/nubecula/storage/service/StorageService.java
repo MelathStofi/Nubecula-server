@@ -3,6 +3,7 @@ package com.melath.nubecula.storage.service;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -18,7 +19,9 @@ public interface StorageService {
 
     Resource loadAsResource(String filename);
 
-    void createDirectory(String dirName, String dir);
+    void createDirectory(String dirName, String dir) throws FileAlreadyExistsException;
+
+    void createDirectory(String dirName) throws FileAlreadyExistsException;
 
     boolean delete(String location);
 

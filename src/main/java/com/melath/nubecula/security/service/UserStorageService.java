@@ -5,28 +5,38 @@ import com.melath.nubecula.security.model.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.security.repository.UserRepository;
+import com.melath.nubecula.storage.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.FileAlreadyExistsException;
 import java.time.LocalDate;
 
 @Service
-public class UserStorage {
+public class UserStorageService {
 
     private final PasswordEncoder encoder;
 
-    UserRepository userRepository;
+    private final UserRepository userRepository;
 
     private final EmailSenderService emailSenderService;
 
+    private final StorageService storageService;
+
     @Autowired
-    public UserStorage(UserRepository userRepository, EmailSenderService emailSenderService, PasswordEncoder encoder) {
+    public UserStorageService(
+            UserRepository userRepository,
+            EmailSenderService emailSenderService,
+            PasswordEncoder encoder,
+            StorageService storageService
+    ) {
         this.userRepository = userRepository;
         this.emailSenderService = emailSenderService;
         this.encoder = encoder;
+        this.storageService = storageService;
     }
 
     public void add(NubeculaUser user) {
@@ -38,7 +48,7 @@ public class UserStorage {
                 .orElseThrow(() -> new UsernameNotFoundException("Username is not found"));
     }
 
-    public boolean signUp(UserCredentials userCredentials) throws AuthenticationException {
+    public boolean signUp(UserCredentials userCredentials) throws AuthenticationException, FileAlreadyExistsException {
 
         String username = userCredentials.getUsername();
         String email = userCredentials.getEmail();
@@ -58,8 +68,15 @@ public class UserStorage {
                 .registrationDate(LocalDate.now())
                 .build()
         );
+
+        storageService.createDirectory(username);
+
         emailSenderService.sendEmail(email, username);
         return true;
+    }
+
+    public UserRepository getUserRepository() {
+        return this.userRepository;
     }
 
 }

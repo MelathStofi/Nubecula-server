@@ -19,7 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class JwtTokenFilter extends OncePerRequestFilter {
 
-    public static final String TOKEN = "token";
+    public static final String TOKEN = "nubecula_token";
     private final com.melath.nubecula.security.service.JwtTokenServices jwtTokenServices;
 
     // this is called for every request that comes in (unless its filtered out before in the chain)

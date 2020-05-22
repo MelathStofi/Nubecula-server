@@ -1,7 +1,9 @@
 package com.melath.nubecula.storage.controller;
 
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.Principal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -12,6 +14,7 @@ import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException
 import com.melath.nubecula.storage.config.StorageProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -33,7 +36,8 @@ public class FileUploadController {
 
     private final String rootDirectory;
 
-    private final String baseUrl = "http://localhost:8080";
+    @Value("${config.allowed.origins}")
+    private String baseUrl;
 
     @Autowired
     public FileUploadController(StorageService storageService, StorageProperties storageProperties) {
@@ -41,18 +45,20 @@ public class FileUploadController {
         this.rootDirectory = storageProperties.getLocation();
     }
 
-    @GetMapping("/{dir}/**")
+    @GetMapping("/**")
     @ResponseBody
-    public Object listUploadedFiles(@PathVariable String dir, HttpServletRequest request) {
-        String fullPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
+    public ResponseEntity<ResponseObject> listUploadedFiles(HttpServletRequest request) {
+        String username = request.getUserPrincipal().getName();
+        String fullPath = username + request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         try {
             Set<String> directories = new HashSet<>();
             Set<String> files = new HashSet<>();
             String spaceInUrl = "%20";
             storageService.loadAll(fullPath).forEach(path -> {
-                if (Files.isDirectory(Paths.get(rootDirectory + fullPath + "/" + path.toString()))) {
+                if (Files.isDirectory(Paths.get(rootDirectory + "/" + fullPath + "/" + path.toString()))) {
                     directories.add(
                             baseUrl +
+                            "/" +
                             fullPath +
                             "/" +
                             path.getFileName().toString().replace(" ", spaceInUrl)
@@ -61,28 +67,29 @@ public class FileUploadController {
                 else {
                     files.add(
                             baseUrl +
-                            "/files" +
+                            "/files/" +
                             fullPath +
                             "/" +
                             path.getFileName().toString().replace(" ", spaceInUrl)
                     );
                 }
             });
-            return ResponseObject.builder().directories(directories).files(files).build();
+            return ResponseEntity.ok().body(ResponseObject.builder().directories(directories).files(files).build());
 
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);
-            log.error(dir + " couldn't get their files");
-            return HttpStatus.NOT_FOUND;
+            log.error(username + " couldn't get their files");
+            return ResponseEntity.notFound().build();
         }
 
     }
 
-    @GetMapping("/files/{dir}/**")
+    @GetMapping("/files/**")
     @ResponseBody
-    public ResponseEntity<Resource> serveFile(@PathVariable String dir, HttpServletRequest request) {
-        int magicNumber = 7;
-        String fullPath = request.getAttribute(HandlerMapping
+    public ResponseEntity<Resource> serveFile(HttpServletRequest request) {
+        int magicNumber = 6; // EZT JAVÍTSD KI!!
+        String username = request.getUserPrincipal().getName();
+        String fullPath = username + request.getAttribute(HandlerMapping
                 .PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE)
                 .toString()
                 .substring(magicNumber);
@@ -91,69 +98,74 @@ public class FileUploadController {
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"" + file.getFilename() + "\"").body(file);
         } catch (StorageFileNotFoundException e) {
-            log.error(dir + " couldn't download a file");
+            log.error(username + " couldn't download a file");
             return ResponseEntity.notFound().build();
         }
     }
 
-    @PostMapping("/{dir}/**")
+    @PostMapping("/**")
     @ResponseBody
-    public HttpStatus handleFileUpload(
-            @RequestParam("file") List<MultipartFile> files,
-            @PathVariable String dir,
+    public ResponseEntity<?> handleFileUpload(
+            @RequestParam("file") Set<MultipartFile> files,
             HttpServletRequest request
     ) {
-        String fullPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
+        String username = request.getUserPrincipal().getName();
+        String fullPath = username + request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         try {
             files.forEach(file -> storageService.store(file, fullPath));
-            return HttpStatus.OK;
+            return ResponseEntity.ok().build();
         } catch (StorageException e) {
-            log.error(dir + " couldn't upload file(s)");
-            return HttpStatus.INSUFFICIENT_STORAGE;
+            log.error(username + " couldn't upload file(s)");
+            return ResponseEntity.status(405).build();
         }
     }
 
-    @PostMapping("/create-directory/{dir}/**")
+    @PostMapping("/create-directory/**")
     @ResponseBody
-    public HttpStatus createDirectory(
-            @PathVariable String dir,
+    public ResponseEntity<?> createDirectory(
             @RequestParam( value = "dir-name") String dirname,
             HttpServletRequest request
     ) {
-        String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString().substring(18);
+        int magicNumber = 17; // EZT JAVÍTSD KI!!
+        String username = request.getUserPrincipal().getName();
+        String fullPath = username + request.getAttribute(HandlerMapping.LOOKUP_PATH).toString().substring(magicNumber);
         try {
             storageService.createDirectory(dirname, fullPath);
-            return HttpStatus.OK;
+            return ResponseEntity.ok().build();
         } catch (StorageException e) {
-            log.error(dir + " couldn't create directory");
-            return HttpStatus.CONFLICT;
+            log.error(username + " couldn't create directory");
+            return ResponseEntity.status(403).build();
+        } catch (FileAlreadyExistsException e) {
+            return ResponseEntity.status(409).build();
         }
     }
 
-    @DeleteMapping("/{dir}/**")
+    @DeleteMapping("/**")
     @ResponseBody
-    public HttpStatus delete(@PathVariable String dir, HttpServletRequest request) {
-        String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
-        if (storageService.delete(fullPath)) return HttpStatus.OK;
+    public ResponseEntity<?> delete(HttpServletRequest request) {
+        String username = request.getUserPrincipal().getName();
+        String fullPath = username + request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
+        if (storageService.delete(fullPath)) return ResponseEntity.ok().build();
         else {
-            log.error(dir + " couldn't delete a file");
-            return HttpStatus.NOT_FOUND;
+            log.error(username + " couldn't delete a file");
+            return ResponseEntity.notFound().build();
         }
     }
 
-    @PutMapping("/{dir}/**")
+    @PutMapping("/**")
     @ResponseBody
-    public HttpStatus rename(@PathVariable String dir,
+    public ResponseEntity<?> rename(
                              @RequestParam( value = "new-name") String newName,
                              HttpServletRequest request
     ) {
-        String fullPath = request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
+        String username = request.getUserPrincipal().getName();
+        String fullPath = username + request.getAttribute(HandlerMapping.LOOKUP_PATH).toString();
         try {
             storageService.rename(newName, fullPath);
-            return HttpStatus.OK;
+            return ResponseEntity.ok().build();
         } catch (StorageException e) {
-            log.error(dir + " couldn't rename a file");
-            return HttpStatus.CONFLICT;
+            log.error(username + " couldn't rename a file");
+            return ResponseEntity.status(409).build();
         }
     }
 
