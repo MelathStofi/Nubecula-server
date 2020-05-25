@@ -1,12 +1,9 @@
 package com.melath.nubecula;
 
-import com.melath.nubecula.storage.StorageProperties;
-import com.melath.nubecula.storage.StorageService;
-import org.springframework.boot.CommandLineRunner;
+import com.melath.nubecula.storage.config.StorageProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 @EnableConfigurationProperties(StorageProperties.class)

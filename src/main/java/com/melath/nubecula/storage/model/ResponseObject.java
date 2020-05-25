@@ -1,4 +1,4 @@
-package com.melath.nubecula.model;
+package com.melath.nubecula.storage.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

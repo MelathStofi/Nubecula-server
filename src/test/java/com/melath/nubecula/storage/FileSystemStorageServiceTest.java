@@ -1,6 +1,8 @@
 package com.melath.nubecula.storage;
 
-import org.junit.jupiter.api.AfterAll;
+import com.melath.nubecula.storage.config.StorageProperties;
+import com.melath.nubecula.storage.model.exceptions.StorageException;
+import com.melath.nubecula.storage.service.FileSystemStorageService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -93,14 +95,14 @@ class FileSystemStorageServiceTest {
     }
 
     @Test
-    public void deleteDirectoryWithFileAndDirectory() {
+    public void deleteDirectoryWithFileAndDirectory() throws FileAlreadyExistsException {
         MultipartFile file = new MockMultipartFile(
                 "data",
                 "filename.txt",
                 "text/plain",
                 "something".getBytes()
         );
-        storage.createDirectory("newFolder", "");
+        storage.createDirectory("newFolder");
         storage.store(file, "/newFolder");
         storage.createDirectory("yetAnotherFolder", "/newFolder");
         assertTrue(storage.delete("/newFolder"));
