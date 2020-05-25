@@ -36,7 +36,7 @@ public class FileUploadController {
 
     private final String rootDirectory;
 
-    @Value("${config.allowed.origins}")
+    @Value("${base.url}")
     private String baseUrl;
 
     @Autowired
@@ -106,7 +106,7 @@ public class FileUploadController {
     @PostMapping("/**")
     @ResponseBody
     public ResponseEntity<?> handleFileUpload(
-            @RequestParam("file") Set<MultipartFile> files,
+            @RequestParam("files") Set<MultipartFile> files,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
@@ -116,17 +116,18 @@ public class FileUploadController {
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
             log.error(username + " couldn't upload file(s)");
-            return ResponseEntity.status(405).build();
+            return ResponseEntity.status(405).body(e.getMessage());
         }
     }
 
-    @PostMapping("/create-directory/**")
+    @PostMapping("/directories/**")
     @ResponseBody
     public ResponseEntity<?> createDirectory(
-            @RequestParam( value = "dir-name") String dirname,
+            @RequestBody String dirname,
             HttpServletRequest request
     ) {
-        int magicNumber = 17; // EZT JAVÍTSD KI!!
+        System.out.println(dirname);
+        int magicNumber = 12; // EZT JAVÍTSD KI!!
         String username = request.getUserPrincipal().getName();
         String fullPath = username + request.getAttribute(HandlerMapping.LOOKUP_PATH).toString().substring(magicNumber);
         try {
@@ -155,7 +156,7 @@ public class FileUploadController {
     @PutMapping("/**")
     @ResponseBody
     public ResponseEntity<?> rename(
-                             @RequestParam( value = "new-name") String newName,
+                             @RequestBody String newName,
                              HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();

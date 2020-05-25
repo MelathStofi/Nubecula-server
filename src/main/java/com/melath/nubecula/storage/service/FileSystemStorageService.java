@@ -105,6 +105,7 @@ public class FileSystemStorageService implements StorageService {
 	@Override
 	public void createDirectory(String dirName, String dir) throws FileAlreadyExistsException {
 		String fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
+		System.out.println("full path: " + fullPath);
 		try {
 			Files.createDirectory(Paths.get(fullPath));
 		} catch (IOException e) {
