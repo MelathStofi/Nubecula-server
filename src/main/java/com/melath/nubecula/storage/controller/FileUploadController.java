@@ -12,6 +12,7 @@ import com.melath.nubecula.storage.model.ResponseObject;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
 import com.melath.nubecula.storage.config.StorageProperties;
+import com.melath.nubecula.storage.service.CreateResponseObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,47 +35,23 @@ public class FileUploadController {
 
     private final StorageService storageService;
 
-    private final String rootDirectory;
-
-    @Value("${base.url}")
-    private String baseUrl;
+    private final CreateResponseObject createResponseObject;
 
     @Autowired
-    public FileUploadController(StorageService storageService, StorageProperties storageProperties) {
+    public FileUploadController(StorageService storageService, CreateResponseObject createResponseObject) {
         this.storageService = storageService;
-        this.rootDirectory = storageProperties.getLocation();
+        this.createResponseObject = createResponseObject;
     }
 
     @GetMapping("/**")
     @ResponseBody
     public ResponseEntity<ResponseObject> listUploadedFiles(HttpServletRequest request) {
         String username = request.getUserPrincipal().getName();
-        String fullPath = username + request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
+        String fullPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
+        if (fullPath.length() <= 1) fullPath = "";
         try {
-            Set<String> directories = new HashSet<>();
-            Set<String> files = new HashSet<>();
-            String spaceInUrl = "%20";
-            storageService.loadAll(fullPath).forEach(path -> {
-                if (Files.isDirectory(Paths.get(rootDirectory + "/" + fullPath + "/" + path.toString()))) {
-                    directories.add(
-                            baseUrl +
-                            "/" +
-                            fullPath +
-                            "/" +
-                            path.getFileName().toString().replace(" ", spaceInUrl)
-                    );
-                }
-                else {
-                    files.add(
-                            baseUrl +
-                            "/files/" +
-                            fullPath +
-                            "/" +
-                            path.getFileName().toString().replace(" ", spaceInUrl)
-                    );
-                }
-            });
-            return ResponseEntity.ok().body(ResponseObject.builder().directories(directories).files(files).build());
+            ResponseObject object = createResponseObject.create(fullPath, username, request);
+            return ResponseEntity.ok().body(object);
 
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);
@@ -126,7 +103,6 @@ public class FileUploadController {
             @RequestBody String dirname,
             HttpServletRequest request
     ) {
-        System.out.println(dirname);
         int magicNumber = 12; // EZT JAVÍTSD KI!!
         String username = request.getUserPrincipal().getName();
         String fullPath = username + request.getAttribute(HandlerMapping.LOOKUP_PATH).toString().substring(magicNumber);

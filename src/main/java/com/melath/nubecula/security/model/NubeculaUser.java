@@ -1,6 +1,8 @@
 package com.melath.nubecula.security.model;
 
 import lombok.*;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -30,6 +32,7 @@ public class NubeculaUser {
 
     @ElementCollection
     @Singular
+    @Cascade(value = {CascadeType.DELETE})
     private List<String> roles;
 
 }

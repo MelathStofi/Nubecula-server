@@ -39,15 +39,5 @@ public class UserInitializer {
                         .registrationDate(LocalDate.now())
                         .build()
         );
-
-        userStorageService.add(
-                NubeculaUser.builder()
-                        .username("username")
-                        .password(encoder.encode("password"))
-                        .role("USER")
-                        .email("user@codecool.com")
-                        .registrationDate(LocalDate.now())
-                        .build()
-        );
     }
 }
