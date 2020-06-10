@@ -59,6 +59,8 @@ public class UserStorageService {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyExistsException();
         }
+
+        storageService.createDirectory(username);
         userRepository.save(NubeculaUser
                 .builder()
                 .username(username)
@@ -68,10 +70,8 @@ public class UserStorageService {
                 .registrationDate(LocalDate.now())
                 .build()
         );
-
-        storageService.createDirectory(username);
-
         emailSenderService.sendEmail(email, username);
+
         return true;
     }
 

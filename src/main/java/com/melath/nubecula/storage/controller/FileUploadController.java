@@ -50,7 +50,8 @@ public class FileUploadController {
         String fullPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         if (fullPath.length() <= 1) fullPath = "";
         try {
-            return ResponseEntity.ok().body(CreateResponseObject.create(fullPath, username));
+            ResponseObject object = createResponseObject.create(fullPath, username, request);
+            return ResponseEntity.ok().body(object);
 
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);

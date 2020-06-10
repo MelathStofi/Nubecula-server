@@ -6,19 +6,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
-@Component
+@Service
 public class CreateResponseObject {
 
     @Value("${base.url}")
     private String baseUrl;
 
-    private StorageService storageService;
+    private final StorageService storageService;
 
     private final String rootDirectory;
 
@@ -28,16 +31,16 @@ public class CreateResponseObject {
         this.rootDirectory = storageProperties.getLocation();
     }
 
-    public static ResponseObject create(String fullPath, String username) {
-        String finalFullPath = fullPath;
+    public ResponseObject create(String fullPath, String username, HttpServletRequest request) {
         Set<String> directories = new HashSet<>();
         Set<String> files = new HashSet<>();
         String spaceInUrl = "%20";
         storageService.loadAll(username + fullPath).forEach(path -> {
-            if (Files.isDirectory(Paths.get(rootDirectory + "/" + username + finalFullPath + "/" + path.toString()))) {
+            if (Files.isDirectory(Paths.get(rootDirectory + "/" + username + fullPath + "/" + path.toString()))) {
                 directories.add(
+                        
                         baseUrl +
-                                finalFullPath +
+                                fullPath +
                                 "/" +
                                 path.getFileName().toString().replace(" ", spaceInUrl)
                 );
@@ -46,7 +49,8 @@ public class CreateResponseObject {
                 files.add(
                         baseUrl +
                                 "/files" +
-                                finalFullPath +
+                                fullPath +
+                                "/" +
                                 path.getFileName().toString().replace(" ", spaceInUrl)
                 );
             }
