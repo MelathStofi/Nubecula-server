@@ -8,11 +8,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.ResponseObject;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
 import com.melath.nubecula.storage.config.StorageProperties;
+import com.melath.nubecula.storage.repository.FileRepository;
 import com.melath.nubecula.storage.service.CreateResponseObject;
+import com.melath.nubecula.storage.service.FileDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,10 +40,13 @@ public class FileUploadController {
 
     private final CreateResponseObject createResponseObject;
 
+    private final FileDataService fileDataService;
+
     @Autowired
-    public FileUploadController(StorageService storageService, CreateResponseObject createResponseObject) {
+    public FileUploadController(StorageService storageService, CreateResponseObject createResponseObject, FileDataService fileDataService) {
         this.storageService = storageService;
         this.createResponseObject = createResponseObject;
+        this.fileDataService = fileDataService;
     }
 
     @GetMapping("/**")
@@ -89,7 +95,10 @@ public class FileUploadController {
         String username = request.getUserPrincipal().getName();
         String fullPath = username + request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString();
         try {
-            files.forEach(file -> storageService.store(file, fullPath));
+            files.forEach(file -> {
+                fileDataService.store(file, username);
+                storageService.store(file, fullPath);
+            });
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
             log.error(username + " couldn't upload file(s)");
@@ -107,13 +116,11 @@ public class FileUploadController {
         String username = request.getUserPrincipal().getName();
         String fullPath = username + request.getAttribute(HandlerMapping.LOOKUP_PATH).toString().substring(magicNumber);
         try {
-            storageService.createDirectory(dirname, fullPath);
+            fileDataService.createDirectory(dirname, username);
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
             log.error(username + " couldn't create directory");
             return ResponseEntity.status(403).build();
-        } catch (FileAlreadyExistsException e) {
-            return ResponseEntity.status(409).build();
         }
     }
 
