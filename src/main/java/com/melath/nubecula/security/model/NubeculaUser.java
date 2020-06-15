@@ -4,11 +4,9 @@ import lombok.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -22,17 +20,18 @@ public class NubeculaUser {
     @GeneratedValue
     private Integer id;
 
+    @Column(unique = true, nullable = false)
     private String username;
 
     private String password;
 
     private String email;
 
-    private LocalDate registrationDate;
+    private LocalDateTime registrationDate;
 
     @ElementCollection
     @Singular
     @Cascade(value = {CascadeType.DELETE})
-    private List<String> roles;
+    private List<Role> roles;
 
 }

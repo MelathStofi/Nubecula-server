@@ -1,4 +1,4 @@
-package com.melath.nubecula.storage.model;
+package com.melath.nubecula.storage.model.reponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,6 +12,6 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 public class ResponseObject {
-    private Set<String> directories;
-    private Set<String> files;
+    private Set<ResponseDirectory> directories;
+    private Set<ResponseFile> files;
 }

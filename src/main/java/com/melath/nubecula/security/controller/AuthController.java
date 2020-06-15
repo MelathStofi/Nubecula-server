@@ -1,5 +1,6 @@
 package com.melath.nubecula.security.controller;
 
+import com.melath.nubecula.security.model.NubeculaUser;
 import com.melath.nubecula.security.model.SignInResponseBody;
 import com.melath.nubecula.security.model.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
@@ -17,10 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -85,6 +83,32 @@ public class AuthController {
         } catch (AuthenticationException e) {
             return ResponseEntity.status(403).build();
         }
+    }
+
+    @PutMapping("/rename")
+    public ResponseEntity<?> renameUser(@RequestBody String newName, HttpServletRequest request) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            NubeculaUser user = userStorageService.getByName(username);
+            user.setUsername(newName);
+            userStorageService.getUserRepository().save(user);
+            userStorageService.renameUserData(username, newName);
+            return ResponseEntity.ok().build();
+
+        } catch (Exception e) {
+            return ResponseEntity.status(405).build();
+        }
+    }
+
+    @PostMapping("/delete")
+    public ResponseEntity<?> deleteUser(HttpServletRequest request, HttpServletResponse response) {
+        String username = request.getUserPrincipal().getName();
+        eraseCookie(response, request);
+        NubeculaUser user = userStorageService.getUserRepository().findByUsername(username).orElse(null);
+        assert user != null;
+        userStorageService.getUserRepository().delete(user);
+        userStorageService.deleteUserData(username);
+        return ResponseEntity.ok().build();
     }
 
     private void addTokenToCookie(HttpServletResponse response, String token) {

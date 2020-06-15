@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +21,7 @@ public class NubeculaFile {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
+    @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
     private String fileName;
@@ -29,17 +30,20 @@ public class NubeculaFile {
 
     private String extension;
 
-    private int size;
+    private long size;
 
     @Basic
     @Temporal(TemporalType.TIMESTAMP)
-    private Date createDate;
+    private LocalDateTime createDate;
 
     private boolean isDirectory;
 
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.ALL})
     private NubeculaFile parentDirectory;
 
     private String owner;
+
+    @Transient
+    private String url;
 
 }
