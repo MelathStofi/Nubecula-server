@@ -33,17 +33,13 @@ public class NubeculaFile {
     private long size;
 
     @Basic
-    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createDate;
 
     private boolean isDirectory;
 
-    @ManyToOne(cascade = {CascadeType.ALL})
+    @ManyToOne(fetch = FetchType.LAZY)
     private NubeculaFile parentDirectory;
 
     private String owner;
-
-    @Transient
-    private String url;
 
 }

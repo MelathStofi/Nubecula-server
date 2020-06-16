@@ -36,7 +36,7 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void store(MultipartFile file, String username, UUID fileId) {
+	public void store(MultipartFile file, UUID fileId) {
 		String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
 		try {
 			if (file.isEmpty()) {
@@ -52,7 +52,7 @@ public class FileSystemStorageService implements StorageService {
 								+ filename);
 			}
 			try (InputStream inputStream = file.getInputStream()) {
-				Files.copy(inputStream, Paths.get(rootLocation.toString() + "/" + username).resolve(fileId.toString()),
+				Files.copy(inputStream, rootLocation.resolve(fileId.toString()),
 					StandardCopyOption.REPLACE_EXISTING);
 				log.info("Successfully uploaded " + filename);
 			}
@@ -63,10 +63,10 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public Set<Path> loadAll(String dir, String username) {
+	public Set<Path> loadAll(String dir) {
 		Path location;
-		if (!dir.equals("")) location = Paths.get(this.rootLocation.toString() + "/" + username + "/" + dir); //<-- EZT JAVÍTSD KI!!!
-		else location = Paths.get(this.rootLocation.toString() + "/" + username);
+		if (!dir.equals("")) location = Paths.get(this.rootLocation.toString() + "/" + dir); //<-- EZT JAVÍTSD KI!!!
+		else location = rootLocation;
 		try {
 			return Files.walk(location, 1)
 				.filter(path -> !path.equals(location))
@@ -80,14 +80,14 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public Path load(String filename, String username) {
-		return Paths.get(this.rootLocation.toString() + "/" + username + "/" + filename);
+	public Path load(String filename) {
+		return Paths.get(this.rootLocation.toString() + "/" + filename);
 	}
 
 	@Override
-	public Resource loadAsResource(String filename, String username) {
+	public Resource loadAsResource(String filename) {
 		try {
-			Path file = load(filename, username);
+			Path file = load(filename);
 			Resource resource = new UrlResource(file.toUri());
 			if (resource.exists() || resource.isReadable()) {
 				return resource;
@@ -106,8 +106,8 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public boolean delete(String delenda, String username) {
-		boolean returnValue = FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + "/" + username + "/" + delenda ).toFile());
+	public boolean delete(String delenda) {
+		boolean returnValue = FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + "/" + delenda ).toFile());
 		if (returnValue) log.info("Delete: " + delenda);
 		return returnValue;
 	}
@@ -118,8 +118,8 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void rename(String filename, String newName, String username) {
-		Path path = Paths.get(rootLocation.toString() + "/" + username + "/" + filename);
+	public void rename(String filename, String newName) {
+		Path path = Paths.get(rootLocation.toString() + "/" + filename);
 		try {
 			Files.move(path, path.resolveSibling(newName));
 		} catch (IOException e) {

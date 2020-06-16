@@ -3,7 +3,7 @@ package com.melath.nubecula.storage.model.reponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -14,13 +14,13 @@ public class ResponseFile {
 
     private String name;
 
-    private String type;
-
     private String extension;
+
+    private String type;
 
     private long size;
 
-    private Date createDate;
+    private LocalDateTime createDate;
 
     private String url;
 

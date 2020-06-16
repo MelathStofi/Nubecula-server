@@ -18,11 +18,11 @@ public class CreateResponseObject {
     @Value("${base.url}")
     private String baseUrl;
 
-    private final DataService fileDataService;
+    private final FileDataService fileDataService;
 
     @Autowired
     public CreateResponseObject(
-            DataService fileDataService
+            FileDataService fileDataService
     ) {
         this.fileDataService = fileDataService;
     }
@@ -32,7 +32,6 @@ public class CreateResponseObject {
         Set<ResponseFile> files = new HashSet<>();
 
         Set<NubeculaFile> filesInDirectory = fileDataService.loadAll(id);
-
         filesInDirectory.forEach(nubeculaFile -> {
             if (nubeculaFile.isDirectory()) {
                 ResponseDirectory responseDirectory = new ResponseDirectory(
@@ -47,8 +46,8 @@ public class CreateResponseObject {
                 ResponseFile responseFile = new ResponseFile(
                         nubeculaFile.getId(),
                         nubeculaFile.getFileName(),
-                        nubeculaFile.getType(),
                         nubeculaFile.getExtension(),
+                        nubeculaFile.getType(),
                         nubeculaFile.getSize(),
                         nubeculaFile.getCreateDate(),
                         baseUrl + "/files/" + id

@@ -19,9 +19,14 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID> {
     Set<NubeculaFile> findAllByParentDirectoryId(@Param("parentDirectoryId") UUID parentDirectoryId);
 
     @Query(
-            value="SELECT CASE WHEN (nf.file_name = :filename) THEN TRUE ELSE FALSE END" +
-                    "FROM nubecula_file nf WHERE nf.parent_directory_id = hex(:parentDirectoryId)",
+            value="SELECT IF((nf.file_name = :filename), TRUE, FALSE) FROM nubecula_file nf WHERE nf.parent_directory_id = :parentDirectoryId",
             nativeQuery=true
     )
     boolean doesFileAlreadyExist(@Param("filename") String filename, @Param("parentDirectoryId") UUID parentDirectoryId);
+
+    @Query(
+            value="DELETE FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId",
+            nativeQuery=true
+    )
+    void deleteAllByParentDirectoryId(@Param("parentDirectoryId") UUID parentDirectoryId);
 }

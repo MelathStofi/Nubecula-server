@@ -12,19 +12,19 @@ public interface StorageService {
 
     void init();
 
-    void store(MultipartFile file, String username, UUID fileId);
+    void store(MultipartFile file, UUID fileId);
 
-    Set<Path> loadAll(String dirName, String username);
+    Set<Path> loadAll(String dirName);
 
-    Path load(String filename, String username);
+    Path load(String filename);
 
-    Resource loadAsResource(String filename, String username);
+    Resource loadAsResource(String filename);
 
-    boolean delete(String filename, String username);
+    boolean delete(String filename);
 
     void deleteAll(String username);
 
-    void rename(String filename, String newName, String username);
+    void rename(String filename, String newName);
 
     void createDirectory(String name);
 

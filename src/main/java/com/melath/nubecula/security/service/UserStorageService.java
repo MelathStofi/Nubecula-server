@@ -6,8 +6,7 @@ import com.melath.nubecula.security.model.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.security.repository.UserRepository;
-import com.melath.nubecula.storage.model.NubeculaFile;
-import com.melath.nubecula.storage.service.DataService;
+import com.melath.nubecula.storage.service.FileDataService;
 import com.melath.nubecula.storage.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
@@ -16,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.FileAlreadyExistsException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -30,7 +29,7 @@ public class UserStorageService {
 
     private final StorageService storageService;
 
-    private final DataService dataService;
+    private final FileDataService fileDataService;
 
     @Autowired
     public UserStorageService(
@@ -38,13 +37,13 @@ public class UserStorageService {
             EmailSenderService emailSenderService,
             PasswordEncoder encoder,
             StorageService storageService,
-            DataService dataService
+            FileDataService fileDataService
     ) {
         this.userRepository = userRepository;
         this.emailSenderService = emailSenderService;
         this.encoder = encoder;
         this.storageService = storageService;
-        this.dataService = dataService;
+        this.fileDataService = fileDataService;
     }
 
     public void add(NubeculaUser user) {
@@ -56,7 +55,7 @@ public class UserStorageService {
                 .orElseThrow(() -> new UsernameNotFoundException("Username is not found"));
     }
 
-    public boolean signUp(UserCredentials userCredentials) throws AuthenticationException, FileAlreadyExistsException {
+    public void signUp(UserCredentials userCredentials) throws AuthenticationException, FileAlreadyExistsException {
 
         String username = userCredentials.getUsername();
         String email = userCredentials.getEmail();
@@ -67,7 +66,7 @@ public class UserStorageService {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyExistsException();
         }
-        dataService.createDirectory(username);
+        fileDataService.createDirectory(username);
         storageService.createDirectory(username);
         userRepository.save(NubeculaUser
                 .builder()
@@ -75,23 +74,20 @@ public class UserStorageService {
                 .password(encoder.encode(userCredentials.getPassword()))
                 .role(Role.USER)
                 .email(email)
-                .registrationDate(LocalDate.now())
+                .registrationDate(LocalDateTime.now())
                 .build()
         );
         emailSenderService.sendEmail(email, username);
-
-        return true;
     }
 
     public void renameUserData(String username, String newName) {
-        UUID userId = dataService.load(username).getId();
-        dataService.rename(userId, newName);
-        storageService.rename(username, newName, username);
+        UUID userId = fileDataService.load(username).getId();
+        fileDataService.rename(userId, newName);
     }
 
     public void deleteUserData(String username) {
-        UUID userId = dataService.load(username).getId();
-        dataService.delete(userId);
+        UUID userId = fileDataService.load(username).getId();
+        fileDataService.delete(userId);
         storageService.deleteAll(username);
     }
 

@@ -1,15 +1,15 @@
 package com.melath.nubecula.storage.controller;
 
-import java.nio.file.Files;
 import java.util.Set;
 import java.util.UUID;
 
-import com.melath.nubecula.storage.model.NubeculaFile;
+import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
+import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
 import com.melath.nubecula.storage.model.reponse.ResponseObject;
 import com.melath.nubecula.storage.service.CreateResponseObject;
-import com.melath.nubecula.storage.service.DataService;
+import com.melath.nubecula.storage.service.FileDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -30,17 +30,18 @@ public class FileUploadController {
 
     private final CreateResponseObject createResponseObject;
 
-    private final DataService fileDataService;
+    private final FileDataService fileDataService;
 
     @Autowired
-    public FileUploadController(StorageService storageService, CreateResponseObject createResponseObject, DataService fileDataService) {
+    public FileUploadController(StorageService storageService, CreateResponseObject createResponseObject, FileDataService fileDataService) {
         this.storageService = storageService;
         this.createResponseObject = createResponseObject;
         this.fileDataService = fileDataService;
     }
 
+
     @GetMapping({"/{id}", "/"})
-    public ResponseEntity<ResponseObject> listUploadedFiles(@PathVariable(required = false) UUID id, HttpServletRequest request) {
+    public ResponseEntity<?> listUploadedFiles(@PathVariable(required = false) UUID id, HttpServletRequest request) {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
@@ -51,16 +52,17 @@ public class FileUploadController {
             handleStorageFileNotFound(e);
             log.error(username + " couldn't get their files");
             return ResponseEntity.notFound().build();
+        } catch (NotNubeculaDirectoryException e) {
+            return ResponseEntity.status(405).body("Method not allowed");
         }
-
     }
 
-    @GetMapping({"/files/{id}", "/files"})
+
+    @GetMapping("/files/{id}")
     public ResponseEntity<Resource> serveFile(@PathVariable( required = false ) UUID id, HttpServletRequest request) {
         String username = request.getUserPrincipal().getName();
-        if (id == null) id = fileDataService.load(username).getId();
         try {
-            Resource file = storageService.loadAsResource(fileDataService.load(id).getFileName(), username);
+            Resource file = storageService.loadAsResource(id.toString());
             return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"" + file.getFilename() + "\"").body(file);
         } catch (StorageFileNotFoundException e) {
@@ -68,6 +70,7 @@ public class FileUploadController {
             return ResponseEntity.notFound().build();
         }
     }
+
 
     @PostMapping({"/{id}", "/", "/files/{id}", "/files"})
     public ResponseEntity<?> handleFileUpload(
@@ -81,14 +84,22 @@ public class FileUploadController {
             UUID finalId = id;
             files.forEach(file -> {
                 UUID fileId = fileDataService.store(finalId, file, username);
-                storageService.store(file, username, fileId);
+                try {
+                    storageService.store(file, fileId);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                    fileDataService.delete(finalId);
+                }
             });
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
             log.error(username + " couldn't upload file(s)");
             return ResponseEntity.status(405).body(e.getMessage());
+        } catch (NotNubeculaDirectoryException e) {
+            return ResponseEntity.status(400).body("No such directory");
         }
     }
+
 
     @PostMapping({"/directories/{id}", "/directories"})
     public ResponseEntity<?> createDirectory(
@@ -107,19 +118,22 @@ public class FileUploadController {
         }
     }
 
+
     @DeleteMapping({"/{id}", "/", "/directories/{id}", "/directories", "/files/{id}", "/files"})
     public ResponseEntity<?> delete(@PathVariable( required = false ) UUID id, HttpServletRequest request) {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
-        if (storageService.delete(fileDataService.load(id).getFileName(), username)) {
+        try {
+            storageService.delete(id.toString());
             fileDataService.delete(id);
             return ResponseEntity.ok().build();
         }
-        else {
+        catch (NoSuchNubeculaFileException e){
             log.error(username + " couldn't delete a file");
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body("No such file or directory");
         }
     }
+
 
     @PutMapping({"/{id}", "/", "/directories/{id}", "/directories", "/files/{id}", "/files"})
     public ResponseEntity<?> rename(
@@ -130,8 +144,6 @@ public class FileUploadController {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
-            NubeculaFile file = fileDataService.load(id);
-            if (!file.isDirectory()) storageService.rename(file.getFileName(), newName, username);
             fileDataService.rename(id, newName);
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
@@ -140,10 +152,12 @@ public class FileUploadController {
         }
     }
 
+
     @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.status(404).body(exc);
     }
+
 
     @GetMapping("/favicon.ico")
     public ResponseEntity<?> handleFavicon() {
