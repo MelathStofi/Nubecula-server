@@ -3,7 +3,6 @@ package com.melath.nubecula.security.service;
 import com.melath.nubecula.security.model.NubeculaUser;
 import com.melath.nubecula.security.model.Role;
 import com.melath.nubecula.storage.service.FileDataService;
-import com.melath.nubecula.storage.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

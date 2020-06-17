@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @Component
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private UserRepository users;
+    private final UserRepository users;
 
     @Autowired
     public CustomUserDetailsService(UserRepository users) {

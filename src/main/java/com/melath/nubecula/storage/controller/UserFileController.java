@@ -1,6 +1,5 @@
 package com.melath.nubecula.storage.controller;
 
-import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.reponse.ResponseObject;
 import com.melath.nubecula.storage.service.CreateResponseObject;
 import com.melath.nubecula.storage.service.FileDataService;

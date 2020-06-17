@@ -14,7 +14,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.FileAlreadyExistsException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -55,7 +54,7 @@ public class UserStorageService {
                 .orElseThrow(() -> new UsernameNotFoundException("Username is not found"));
     }
 
-    public void signUp(UserCredentials userCredentials) throws AuthenticationException, FileAlreadyExistsException {
+    public void signUp(UserCredentials userCredentials) throws AuthenticationException {
 
         String username = userCredentials.getUsername();
         String email = userCredentials.getEmail();
