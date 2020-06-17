@@ -61,7 +61,7 @@ public class AuthController {
             return ResponseEntity.ok().body(userCredentials.getUsername());
         } catch (EmailAlreadyExistsException e) {
             return ResponseEntity.status(409).body(SignUpException.EMAIL);
-        } catch (UsernameAlreadyExistsException | FileAlreadyExistsException e) {
+        } catch (UsernameAlreadyExistsException e) {
             return ResponseEntity.status(409).body(SignUpException.USERNAME);
         }
     }
