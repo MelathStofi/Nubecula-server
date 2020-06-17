@@ -24,6 +24,9 @@ public class NubeculaFile {
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
+    @Column(columnDefinition = "BINARY(16)")
+    private UUID fileId;
+
     private String fileName;
 
     private String type;
@@ -41,5 +44,7 @@ public class NubeculaFile {
     private NubeculaFile parentDirectory;
 
     private String owner;
+
+    private boolean shared;
 
 }

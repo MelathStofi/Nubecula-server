@@ -18,6 +18,8 @@ public class ResponseDirectory {
 
     private LocalDateTime createDate;
 
+    private boolean shared;
+
     private String url;
 
 }

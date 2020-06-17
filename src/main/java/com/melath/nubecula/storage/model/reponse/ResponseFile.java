@@ -22,6 +22,8 @@ public class ResponseFile {
 
     private LocalDateTime createDate;
 
+    private boolean shared;
+
     private String url;
 
 }

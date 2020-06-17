@@ -4,13 +4,11 @@ import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.reponse.ResponseDirectory;
 import com.melath.nubecula.storage.model.reponse.ResponseFile;
 import com.melath.nubecula.storage.model.reponse.ResponseObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 public class CreateResponseObject {
@@ -18,20 +16,11 @@ public class CreateResponseObject {
     @Value("${base.url}")
     private String baseUrl;
 
-    private final FileDataService fileDataService;
 
-    @Autowired
-    public CreateResponseObject(
-            FileDataService fileDataService
-    ) {
-        this.fileDataService = fileDataService;
-    }
-
-    public ResponseObject create(UUID id) {
+    public ResponseObject create(Set<NubeculaFile> filesInDirectory) {
         Set<ResponseDirectory> directories = new HashSet<>();
         Set<ResponseFile> files = new HashSet<>();
 
-        Set<NubeculaFile> filesInDirectory = fileDataService.loadAll(id);
         filesInDirectory.forEach(nubeculaFile -> {
             if (nubeculaFile.isDirectory()) {
                 ResponseDirectory responseDirectory = new ResponseDirectory(
@@ -39,7 +28,8 @@ public class CreateResponseObject {
                         nubeculaFile.getFileName(),
                         nubeculaFile.getSize(),
                         nubeculaFile.getCreateDate(),
-                        baseUrl + "/" + id
+                        nubeculaFile.isShared(),
+                        baseUrl + "/" + nubeculaFile.getId()
                 );
                 directories.add(responseDirectory);
             } else {
@@ -50,7 +40,8 @@ public class CreateResponseObject {
                         nubeculaFile.getType(),
                         nubeculaFile.getSize(),
                         nubeculaFile.getCreateDate(),
-                        baseUrl + "/files/" + id
+                        nubeculaFile.isShared(),
+                        baseUrl + "/files/" + nubeculaFile.getId()
                 );
                 files.add(responseFile);
             }
