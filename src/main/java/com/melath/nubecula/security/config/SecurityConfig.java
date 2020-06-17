@@ -38,10 +38,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .authorizeRequests()
                 .antMatchers("/auth/**").permitAll() // allowed by anyone
-                .antMatchers(HttpMethod.GET, "/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.POST, "/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.PUT, "/**").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.DELETE, "/**").authenticated() // allowed only when signed in
+                .antMatchers("/").authenticated() // allowed only when signed in
+                .antMatchers("/{id}").authenticated() // allowed only when signed in
+                .antMatchers("/directories").authenticated() // allowed only when signed in
+                .antMatchers("/directories/{id}").authenticated() // allowed only when signed in
+                .antMatchers("/files").authenticated() // allowed only when signed in
+                .antMatchers("/files/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/toggle-share/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/directories/toggle-share/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/files/toggle-share/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.GET, "/users/**").permitAll()
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:
                 .and()

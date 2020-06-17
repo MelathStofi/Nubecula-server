@@ -6,27 +6,26 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.UUID;
 
 public interface StorageService {
 
     void init();
 
-    void store(MultipartFile file, String dir);
+    void store(MultipartFile file, UUID fileId);
 
-    Set<Path> loadAll(String dir);
+    Set<Path> loadAll(String dirName);
 
     Path load(String filename);
 
     Resource loadAsResource(String filename);
 
-    void createDirectory(String dirName, String dir) throws FileAlreadyExistsException;
+    boolean delete(String filename);
 
-    void createDirectory(String dirName) throws FileAlreadyExistsException;
+    void deleteAll(String username);
 
-    boolean delete(String location);
+    void rename(String filename, String newName);
 
-    void deleteAll();
-
-    void rename(String newName, String location);
+    void createDirectory(String name);
 
 }

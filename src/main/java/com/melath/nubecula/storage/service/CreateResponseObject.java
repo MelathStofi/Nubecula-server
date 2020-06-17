@@ -1,17 +1,12 @@
 package com.melath.nubecula.storage.service;
 
-import com.melath.nubecula.storage.config.StorageProperties;
-import com.melath.nubecula.storage.model.ResponseObject;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.melath.nubecula.storage.model.NubeculaFile;
+import com.melath.nubecula.storage.model.reponse.ResponseDirectory;
+import com.melath.nubecula.storage.model.reponse.ResponseFile;
+import com.melath.nubecula.storage.model.reponse.ResponseObject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
-import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,40 +16,38 @@ public class CreateResponseObject {
     @Value("${base.url}")
     private String baseUrl;
 
-    private final StorageService storageService;
 
-    private final String rootDirectory;
+    public ResponseObject create(Set<NubeculaFile> filesInDirectory) {
+        Set<ResponseDirectory> directories = new HashSet<>();
+        Set<ResponseFile> files = new HashSet<>();
 
-    @Autowired
-    public CreateResponseObject(StorageService storageService, StorageProperties storageProperties) {
-        this.storageService = storageService;
-        this.rootDirectory = storageProperties.getLocation();
-    }
-
-    public ResponseObject create(String fullPath, String username, HttpServletRequest request) {
-        Set<String> directories = new HashSet<>();
-        Set<String> files = new HashSet<>();
-        String spaceInUrl = "%20";
-        storageService.loadAll(username + fullPath).forEach(path -> {
-            if (Files.isDirectory(Paths.get(rootDirectory + "/" + username + fullPath + "/" + path.toString()))) {
-                directories.add(
-                        
-                        baseUrl +
-                                fullPath +
-                                "/" +
-                                path.getFileName().toString().replace(" ", spaceInUrl)
+        filesInDirectory.forEach(nubeculaFile -> {
+            if (nubeculaFile.isDirectory()) {
+                ResponseDirectory responseDirectory = new ResponseDirectory(
+                        nubeculaFile.getId(),
+                        nubeculaFile.getFileName(),
+                        nubeculaFile.getSize(),
+                        nubeculaFile.getCreateDate(),
+                        nubeculaFile.isShared(),
+                        baseUrl + "/" + nubeculaFile.getId()
                 );
-            }
-            else {
-                files.add(
-                        baseUrl +
-                                "/files" +
-                                fullPath +
-                                "/" +
-                                path.getFileName().toString().replace(" ", spaceInUrl)
+                directories.add(responseDirectory);
+            } else {
+                ResponseFile responseFile = new ResponseFile(
+                        nubeculaFile.getId(),
+                        nubeculaFile.getFileName(),
+                        nubeculaFile.getExtension(),
+                        nubeculaFile.getType(),
+                        nubeculaFile.getSize(),
+                        nubeculaFile.getCreateDate(),
+                        nubeculaFile.isShared(),
+                        baseUrl + "/files/" + nubeculaFile.getId()
                 );
+                files.add(responseFile);
             }
         });
         return ResponseObject.builder().directories(directories).files(files).build();
+
     }
+
 }

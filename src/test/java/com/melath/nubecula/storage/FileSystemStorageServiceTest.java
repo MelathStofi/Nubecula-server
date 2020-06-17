@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(SpringExtension.class)
 class FileSystemStorageServiceTest {
 
-    private String rootLocation;
+    /*private String rootLocation;
 
     private FileSystemStorageService storage;
 
@@ -110,7 +110,7 @@ class FileSystemStorageServiceTest {
 
     @Test
     public void renameFile() {
-        /*MultipartFile file = new MockMultipartFile(
+        MultipartFile file = new MockMultipartFile(
                 "data",
                 "filename.txt",
                 "text/plain",
@@ -120,6 +120,6 @@ class FileSystemStorageServiceTest {
         storage.rename("newname.pdf", "");
         Set<Path> files = storage.loadAll("");
         Path path = files.stream().findFirst().get();
-        assertThat(path).endsWith(Paths.get(rootLocation + "/newname"));*/
-    }
+        assertThat(path).endsWith(Paths.get(rootLocation + "/newname"));
+    }*/
 }

@@ -1,16 +1,20 @@
 package com.melath.nubecula.storage.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.*;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.melath.nubecula.storage.config.StorageProperties;
+import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
+import com.melath.nubecula.storage.repository.FileRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -32,9 +36,8 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void store(MultipartFile file, String dir) {
+	public void store(MultipartFile file, UUID fileId) {
 		String filename = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-		Path currentLocation = Paths.get(this.rootLocation.toString() + "/" + dir);
 		try {
 			if (file.isEmpty()) {
 				log.error("Failed to store empty file " + filename);
@@ -49,9 +52,9 @@ public class FileSystemStorageService implements StorageService {
 								+ filename);
 			}
 			try (InputStream inputStream = file.getInputStream()) {
-				Files.copy(inputStream, currentLocation.resolve(filename),
+				Files.copy(inputStream, rootLocation.resolve(fileId.toString()),
 					StandardCopyOption.REPLACE_EXISTING);
-				log.info("Successfully uploaded " + filename + " to: " + currentLocation);
+				log.info("Successfully uploaded " + filename);
 			}
 		}
 		catch (IOException e) {
@@ -62,8 +65,8 @@ public class FileSystemStorageService implements StorageService {
 	@Override
 	public Set<Path> loadAll(String dir) {
 		Path location;
-		if (dir != "") location = Paths.get(this.rootLocation.toString() + "/" + dir);
-		else location = this.rootLocation;
+		if (!dir.equals("")) location = Paths.get(this.rootLocation.toString() + "/" + dir); //<-- EZT JAVÍTSD KI!!!
+		else location = rootLocation;
 		try {
 			return Files.walk(location, 1)
 				.filter(path -> !path.equals(location))
@@ -78,7 +81,7 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public Path load(String filename) {
-		return rootLocation.resolve(filename);
+		return Paths.get(this.rootLocation.toString() + "/" + filename);
 	}
 
 	@Override
@@ -103,28 +106,6 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void createDirectory(String dirName, String dir) throws FileAlreadyExistsException {
-		String fullPath = rootLocation.toString() + "/" + dir + "/" + dirName;
-		try {
-			Files.createDirectory(Paths.get(fullPath));
-		} catch (IOException e) {
-			log.error("Could not create directory in: " + fullPath);
-			throw new FileAlreadyExistsException("Could not create directory");
-		}
-	}
-
-	@Override
-	public void createDirectory(String dirName) throws FileAlreadyExistsException {
-		String fullPath = rootLocation.toString() + "/" + dirName;
-		try {
-			Files.createDirectory(Paths.get(fullPath));
-		} catch (IOException e) {
-			log.error("Could not create directory in: " + fullPath);
-			throw new FileAlreadyExistsException("Could not create directory");
-		}
-	}
-
-	@Override
 	public boolean delete(String delenda) {
 		boolean returnValue = FileSystemUtils.deleteRecursively(Paths.get(rootLocation.toString() + "/" + delenda ).toFile());
 		if (returnValue) log.info("Delete: " + delenda);
@@ -132,18 +113,27 @@ public class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void deleteAll() {
-		FileSystemUtils.deleteRecursively(rootLocation.toFile());
+	public void deleteAll(String username) {
+		FileSystemUtils.deleteRecursively(Paths.get(rootLocation + "/" + username).toFile());
 	}
 
 	@Override
-	public void rename(String newName, String location) {
-		Path path = Paths.get(rootLocation.toString() + "/" + location);
+	public void rename(String filename, String newName) {
+		Path path = Paths.get(rootLocation.toString() + "/" + filename);
 		try {
 			Files.move(path, path.resolveSibling(newName));
 		} catch (IOException e) {
-			log.error("Couldn't rename file at " + location + " to: " + newName);
-			throw new StorageException("Couldn't rename file", e);
+			log.error("Couldn't rename file " + filename + " to: " + newName);
+			throw new StorageException("Couldn't rename file ", e);
+		}
+	}
+
+	@Override
+	public void createDirectory(String name) {
+		try {
+			Files.createDirectories(Paths.get(rootLocation.toString() + "/" + name));
+		} catch (IOException e) {
+			throw new StorageException("Couldn't create directory " + name + ": Already exists", e);
 		}
 	}
 
@@ -153,7 +143,7 @@ public class FileSystemStorageService implements StorageService {
 			Files.createDirectories(rootLocation);
 		}
 		catch (IOException e) {
-			throw new StorageException("Could not initialize storage", e);
+			throw new StorageException("Could not initialize storage ", e);
 		}
 	}
 }
