@@ -48,6 +48,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.PUT, "/directories/toggle-share/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/files/toggle-share/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.GET, "/users/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/users").permitAll()
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:
                 .and()

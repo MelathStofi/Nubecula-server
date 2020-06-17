@@ -6,6 +6,7 @@ import com.melath.nubecula.security.model.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.security.repository.UserRepository;
+import com.melath.nubecula.storage.model.reponse.ResponseUser;
 import com.melath.nubecula.storage.service.FileDataService;
 import com.melath.nubecula.storage.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +15,12 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserStorageService {
@@ -52,6 +57,13 @@ public class UserStorageService {
     public NubeculaUser getByName(String name) {
         return userRepository.findByUsername(name)
                 .orElseThrow(() -> new UsernameNotFoundException("Username is not found"));
+    }
+
+    @Transactional
+    public Set<ResponseUser> getAllUsers() {
+        return userRepository.findAllUsers().map(user ->
+            new ResponseUser(user.getUsername(), user.getRegistrationDate())
+        ).collect(Collectors.toSet());
     }
 
     public void signUp(UserCredentials userCredentials) throws AuthenticationException {
