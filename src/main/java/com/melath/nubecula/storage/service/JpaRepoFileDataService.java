@@ -10,9 +10,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 public class JpaRepoFileDataService implements FileDataService {
@@ -24,6 +25,7 @@ public class JpaRepoFileDataService implements FileDataService {
         this.fileRepository = fileRepository;
     }
 
+
     @Override
     public NubeculaFile store(UUID parentDirId, MultipartFile file, String username) {
         assert fileRepository.doesFileAlreadyExist(file.getOriginalFilename(), parentDirId) : "File already exists";
@@ -31,7 +33,7 @@ public class JpaRepoFileDataService implements FileDataService {
         if (parentDir == null) throw new NotNubeculaDirectoryException("Not a directory");
         NubeculaFile fileData = NubeculaFile.builder()
                 .fileId(UUID.randomUUID())
-                .fileName(FilenameUtils.getBaseName(file.getOriginalFilename()))
+                .filename(FilenameUtils.getBaseName(file.getOriginalFilename()))
                 .extension(FilenameUtils.getExtension(file.getOriginalFilename()))
                 .parentDirectory(parentDir)
                 .isDirectory(false)
@@ -44,27 +46,43 @@ public class JpaRepoFileDataService implements FileDataService {
         return fileRepository.save(fileData);
     }
 
+
     @Override
-    public Set<NubeculaFile> loadAll(UUID id) throws NotNubeculaDirectoryException {
+    @Transactional
+    public Stream<NubeculaFile> loadAll(UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException {
         NubeculaFile file = fileRepository.findById(id).orElse(null);
         if (file == null || !file.isDirectory()) throw new NotNubeculaDirectoryException("Not a directory");
-        return fileRepository.findAllByParentDirectoryId(id);
+        if (!desc) return fileRepository.findAllIsDirDescSortAsc(id, sort);
+        else return fileRepository.findAllIsDirDescSortDesc(id, sort);
     }
+
+
+    @Override
+    @Transactional
+    public Stream<NubeculaFile> loadAllShared(String username, String sort, boolean desc) throws UsernameNotFoundException {
+        NubeculaFile parentDirectory = fileRepository.findByFilename(username);
+        if (parentDirectory == null) throw new UsernameNotFoundException("Username not found");
+        if (!desc) return fileRepository.findAllSharedAsc(parentDirectory.getId(), sort);
+        else return fileRepository.findAllSharedDesc(parentDirectory.getId(), sort);
+    }
+
 
     @Override
     public NubeculaFile load(UUID id) {
         return fileRepository.findById(id).orElse(null);
     }
 
+
     @Override
     public NubeculaFile load(String username) {
-        return fileRepository.findByFileName(username);
+        return fileRepository.findByFilename(username);
     }
+
 
     @Override
     public void createDirectory(String username) {
             NubeculaFile fileData = NubeculaFile.builder()
-                    .fileName(username)
+                    .filename(username)
                     .isDirectory(true)
                     .createDate(LocalDateTime.now())
                     .type("directory")
@@ -74,12 +92,13 @@ public class JpaRepoFileDataService implements FileDataService {
             fileRepository.save(fileData);
     }
 
+
     @Override
     public void createDirectory(UUID parentDirId, String dirname, String username) {
-        assert fileRepository.findByFileName(dirname).getSize() == 0;
+        assert fileRepository.findByFilename(dirname).getSize() == 0;
         fileRepository.findById(parentDirId).ifPresent(parentDir -> {
             NubeculaFile fileData = NubeculaFile.builder()
-                    .fileName(dirname)
+                    .filename(dirname)
                     .parentDirectory(parentDir)
                     .isDirectory(true)
                     .createDate(LocalDateTime.now())
@@ -91,13 +110,15 @@ public class JpaRepoFileDataService implements FileDataService {
         });
     }
 
+
     @Override
     public void rename(UUID id, String newName) {
         fileRepository.findById(id).ifPresent(file -> {
-            file.setFileName(newName);
+            file.setFilename(newName);
             fileRepository.save(file);
         });
     }
+
 
     @Override
     public void delete(UUID id) {
@@ -106,12 +127,6 @@ public class JpaRepoFileDataService implements FileDataService {
         fileRepository.deleteById(id);
     }
 
-    @Override
-    public Set<NubeculaFile> loadAllShared(String username) throws UsernameNotFoundException {
-        NubeculaFile parentDirectory = fileRepository.findByFileName(username);
-        if (parentDirectory == null) throw new UsernameNotFoundException("Username not found");
-        return fileRepository.findAllShared(parentDirectory.getId());
-    }
 
     @Override
     public void toggleShare(UUID id) {
@@ -120,5 +135,6 @@ public class JpaRepoFileDataService implements FileDataService {
         fileToShare.setShared(!fileToShare.isShared());
         fileRepository.save(fileToShare);
     }
+
 
 }

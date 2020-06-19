@@ -1,27 +1,24 @@
 package com.melath.nubecula.storage.controller;
 
 import com.melath.nubecula.security.service.UserStorageService;
-import com.melath.nubecula.storage.model.reponse.ResponseObject;
+import com.melath.nubecula.storage.model.reponse.ResponseFile;
 import com.melath.nubecula.storage.model.reponse.ResponseUser;
-import com.melath.nubecula.storage.service.CreateResponseObject;
+import com.melath.nubecula.storage.service.CreateResponse;
 import com.melath.nubecula.storage.service.FileDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.transaction.Transactional;
-import java.util.Set;
+import java.util.List;
 
 
 @RestController
 @RequestMapping("/users")
 public class UserFileController {
 
-    private final CreateResponseObject createResponseObject;
+    private final CreateResponse createResponse;
 
     private final UserStorageService userStorageService;
 
@@ -29,26 +26,31 @@ public class UserFileController {
 
     @Autowired
     public UserFileController(
-            CreateResponseObject createResponseObject,
+            CreateResponse createResponse,
             UserStorageService userStorageService,
             FileDataService fileDataService
     ) {
-        this.createResponseObject = createResponseObject;
+        this.createResponse = createResponse;
         this.userStorageService = userStorageService;
         this.fileDataService = fileDataService;
     }
 
 
     @GetMapping("/")
-    public Set<ResponseUser> listAllUsers() {
+    public List<ResponseUser> listAllUsers() {
         return userStorageService.getAllUsers();
     }
 
 
     @GetMapping("/{username}")
-    public ResponseEntity<?> listSharedFiles(@PathVariable String username) {
+    @Transactional
+    public ResponseEntity<?> listSharedFiles(
+            @PathVariable String username,
+            @RequestParam(required = false, defaultValue = "filename") String sort,
+            @RequestParam(required = false, defaultValue = "false") boolean desc
+    ) {
         try {
-            ResponseObject files = createResponseObject.create(fileDataService.loadAllShared(username));
+            List<ResponseFile> files = createResponse.create(fileDataService.loadAllShared(username, sort, desc));
             return ResponseEntity.ok(files);
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.badRequest().body("User not found");

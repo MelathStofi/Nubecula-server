@@ -27,7 +27,7 @@ public class NubeculaFile {
     @Column(columnDefinition = "BINARY(16)")
     private UUID fileId;
 
-    private String fileName;
+    private String filename;
 
     private String type;
 

@@ -5,15 +5,15 @@ import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryExceptio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public interface FileDataService {
     NubeculaFile store(UUID parentDirId, MultipartFile file, String username);
 
-    Set<NubeculaFile> loadAll(UUID id) throws NotNubeculaDirectoryException;
+    Stream<NubeculaFile> loadAll(UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException;
 
-    Set<NubeculaFile> loadAllShared(String username) throws UsernameNotFoundException;
+    Stream<NubeculaFile> loadAllShared(String username, String sort, boolean desc) throws UsernameNotFoundException;
 
     NubeculaFile load(UUID id);
 

@@ -1,18 +1,22 @@
 package com.melath.nubecula.storage.model.reponse;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ResponseFile {
 
     private UUID id;
 
-    private String name;
+    private String filename;
 
     private String extension;
 
@@ -21,6 +25,8 @@ public class ResponseFile {
     private long size;
 
     private LocalDateTime createDate;
+
+    private boolean isDirectory;
 
     private boolean shared;
 

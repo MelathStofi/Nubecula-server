@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,10 +59,10 @@ public class UserStorageService {
     }
 
     @Transactional
-    public Set<ResponseUser> getAllUsers() {
+    public List<ResponseUser> getAllUsers() {
         return userRepository.findAllUsers().map(user ->
             new ResponseUser(user.getUsername(), user.getRegistrationDate())
-        ).collect(Collectors.toSet());
+        ).collect(Collectors.toList());
     }
 
     public void signUp(UserCredentials userCredentials) throws AuthenticationException {
@@ -78,7 +77,6 @@ public class UserStorageService {
             throw new EmailAlreadyExistsException();
         }
         fileDataService.createDirectory(username);
-        storageService.createDirectory(username);
         userRepository.save(NubeculaUser
                 .builder()
                 .username(username)

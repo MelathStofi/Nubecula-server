@@ -8,8 +8,7 @@ import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
-import com.melath.nubecula.storage.model.reponse.ResponseObject;
-import com.melath.nubecula.storage.service.CreateResponseObject;
+import com.melath.nubecula.storage.service.CreateResponse;
 import com.melath.nubecula.storage.service.FileDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.melath.nubecula.storage.service.StorageService;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 
 @RestController
 @Slf4j
@@ -29,33 +29,34 @@ public class FileCRUDController {
 
     private final StorageService storageService;
 
-    private final CreateResponseObject createResponseObject;
+    private final CreateResponse createResponse;
 
     private final FileDataService fileDataService;
 
     @Autowired
     public FileCRUDController(
             StorageService storageService,
-            CreateResponseObject createResponseObject,
+            CreateResponse createResponse,
             FileDataService fileDataService
     ) {
         this.storageService = storageService;
-        this.createResponseObject = createResponseObject;
+        this.createResponse = createResponse;
         this.fileDataService = fileDataService;
     }
 
     // RETRIEVE
     @GetMapping({"/{id}", "/"})
+    @Transactional
     public ResponseEntity<?> listUploadedFiles(
             @PathVariable(required = false) UUID id,
+            @RequestParam(required = false, defaultValue = "filename") String sort,
+            @RequestParam(required = false, defaultValue = "false") boolean desc,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
-            Set<NubeculaFile> filesInDirectory = fileDataService.loadAll(id);
-            ResponseObject object = createResponseObject.create(filesInDirectory);
-            return ResponseEntity.ok().body(object);
+            return ResponseEntity.ok().body(createResponse.create(fileDataService.loadAll(id, sort, desc)));
 
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);
