@@ -3,6 +3,7 @@ package com.melath.nubecula.storage.controller;
 import java.util.Set;
 import java.util.UUID;
 
+import com.melath.nubecula.security.service.UserStorageService;
 import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,15 +35,19 @@ public class FileCRUDController {
 
     private final FileDataService fileDataService;
 
+    private final UserStorageService userStorageService;
+
     @Autowired
     public FileCRUDController(
             StorageService storageService,
             CreateResponse createResponse,
-            FileDataService fileDataService
+            FileDataService fileDataService,
+            UserStorageService userStorageService
     ) {
         this.storageService = storageService;
         this.createResponse = createResponse;
         this.fileDataService = fileDataService;
+        this.userStorageService = userStorageService;
     }
 
     // RETRIEVE
@@ -93,9 +99,10 @@ public class FileCRUDController {
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
-        if (id == null) id = fileDataService.load(username).getId();
         try {
-            UUID finalId = id;
+            if (id == null) id = fileDataService.load(username).getId();
+            if (!userStorageService.addToUserStorageSize(username, files)) throw new StorageException("Not enough space");
+            final UUID finalId = id;
             files.forEach(file -> {
                 NubeculaFile savedFile = fileDataService.store(finalId, file, username);
                 try {
@@ -107,10 +114,12 @@ public class FileCRUDController {
             });
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
-            log.error(username + " couldn't upload file(s)");
-            return ResponseEntity.status(405).body(e.getMessage());
+            log.error(username + " couldn't upload file(s) due to space deficit");
+            return ResponseEntity.status(507).body(e.getMessage());
         } catch (NotNubeculaDirectoryException e) {
             return ResponseEntity.status(400).body("No such directory");
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.badRequest().body("Get the fuck out!");
         }
     }
 
@@ -180,6 +189,39 @@ public class FileCRUDController {
             return ResponseEntity.badRequest().body("No such file or directory");
         }
     }
+
+    // UPDATE
+    @PutMapping({"/replace/{id}", "/directories/replace/{id}", "/files/replace{id}"})
+    public ResponseEntity<?> replace(
+            @PathVariable UUID id,
+            @RequestBody UUID targetDirId
+    ) {
+        try {
+            fileDataService.replace(id, targetDirId);
+            return ResponseEntity.ok().build();
+        } catch (NoSuchNubeculaFileException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // CREATE
+    @PutMapping({"/copy/{id}", "/directories/copy/{id}", "/files/copy{id}"})
+    public ResponseEntity<?> copy(
+            @PathVariable UUID id,
+            @RequestBody UUID targetDirId,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            fileDataService.copy(id, targetDirId, username);
+            return ResponseEntity.ok().build();
+        } catch (NoSuchNubeculaFileException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (StorageException e) {
+            return ResponseEntity.status(507).body(e.getMessage());
+        }
+    }
+
 
     // EXCEPTION
     @ExceptionHandler(StorageFileNotFoundException.class)

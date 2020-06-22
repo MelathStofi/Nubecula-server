@@ -1,5 +1,6 @@
 package com.melath.nubecula.storage.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -131,6 +132,18 @@ public class FileSystemStorageService implements StorageService {
 			Files.createDirectories(Paths.get(rootLocation.toString() + "/" + name));
 		} catch (IOException e) {
 			throw new StorageException("Couldn't create directory " + name + ": Already exists", e);
+		}
+	}
+
+	@Override
+	public void copy(String filename, String newFilename) {
+		try {
+			Files.copy(
+					Paths.get(rootLocation.toString() + "/" + filename),
+					Paths.get(rootLocation.toString() + "/" + newFilename)
+			);
+		} catch (IOException e) {
+			throw new StorageException("Couldn't copy file: " + filename);
 		}
 	}
 

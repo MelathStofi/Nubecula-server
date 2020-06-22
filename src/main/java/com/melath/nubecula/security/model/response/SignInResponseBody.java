@@ -1,4 +1,4 @@
-package com.melath.nubecula.security.model;
+package com.melath.nubecula.security.model.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

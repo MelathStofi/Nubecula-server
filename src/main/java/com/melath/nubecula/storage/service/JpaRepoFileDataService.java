@@ -1,8 +1,10 @@
 package com.melath.nubecula.storage.service;
 
+import com.melath.nubecula.security.service.UserStorageService;
 import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
+import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.repository.FileRepository;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,21 +22,28 @@ public class JpaRepoFileDataService implements FileDataService {
 
     private final FileRepository fileRepository;
 
+    private final StorageService storageService;
+
+    private UserStorageService userStorageService;
+
     @Autowired
-    JpaRepoFileDataService(FileRepository fileRepository) {
+    JpaRepoFileDataService(FileRepository fileRepository, StorageService storageService) {
         this.fileRepository = fileRepository;
+        this.storageService = storageService;
     }
 
 
     @Override
     public NubeculaFile store(UUID parentDirId, MultipartFile file, String username) {
-        assert fileRepository.doesFileAlreadyExist(file.getOriginalFilename(), parentDirId) : "File already exists";
+        String filename = FilenameUtils.getBaseName(file.getOriginalFilename());
+        String extension = FilenameUtils.getExtension(file.getOriginalFilename());
+        assert !fileRepository.existsInDirectory(filename, extension, parentDirId) : file.getOriginalFilename() + " already exists!";
         NubeculaFile parentDir = fileRepository.findById(parentDirId).orElse(null);
         if (parentDir == null) throw new NotNubeculaDirectoryException("Not a directory");
         NubeculaFile fileData = NubeculaFile.builder()
                 .fileId(UUID.randomUUID())
-                .filename(FilenameUtils.getBaseName(file.getOriginalFilename()))
-                .extension(FilenameUtils.getExtension(file.getOriginalFilename()))
+                .filename(filename)
+                .extension(extension)
                 .parentDirectory(parentDir)
                 .isDirectory(false)
                 .createDate(LocalDateTime.now())
@@ -124,16 +133,113 @@ public class JpaRepoFileDataService implements FileDataService {
     public void delete(UUID id) {
         NubeculaFile virtualPath = fileRepository.findById(id).orElse(null);
         if (virtualPath == null) throw new NoSuchNubeculaFileException("ID not found");
+        if (virtualPath.isDirectory()) {
+            for (NubeculaFile file : virtualPath.getNubeculaFiles()) {
+                if (file.isDirectory()) {
+                    delete(file.getId());
+                } else {
+                    storageService.delete(file.getFileId().toString());
+                    userStorageService.deleteFromUserStorageSize(file.getSize());
+                    fileRepository.deleteById(file.getId());
+                }
+            }
+        } else {
+            storageService.delete(virtualPath.getFileId().toString());
+            userStorageService.deleteFromUserStorageSize(virtualPath.getSize());
+        }
         fileRepository.deleteById(id);
     }
 
 
     @Override
     public void toggleShare(UUID id) {
-        NubeculaFile fileToShare = fileRepository.findById(id).orElse(null);
-        if (fileToShare == null) throw new NoSuchNubeculaFileException("No such file or directory");
-        fileToShare.setShared(!fileToShare.isShared());
-        fileRepository.save(fileToShare);
+        NubeculaFile virtualPath = fileRepository.findById(id).orElse(null);
+        if (virtualPath == null) throw new NoSuchNubeculaFileException("No such file or directory");
+        if (virtualPath.isDirectory()) {
+            for (NubeculaFile file : virtualPath.getNubeculaFiles()) {
+                if (file.isDirectory()) {
+                    toggleShare(file.getId());
+                } else {
+                    file.setShared(!file.isShared());
+                }
+            }
+        }
+        virtualPath.setShared(!virtualPath.isShared());
+        fileRepository.save(virtualPath);
+    }
+
+    @Override
+    public void replace(UUID replaceableId, UUID targetDirId) {
+        NubeculaFile replaceable = fileRepository.findById(replaceableId).orElse(null);
+        NubeculaFile targetDir = fileRepository.findById(targetDirId).orElse(null);
+        if (replaceable == null) throw new NoSuchNubeculaFileException("replaced file ID not found");
+        if (targetDir == null) throw new NoSuchNubeculaFileException("Target directory ID not found");
+        replaceable.setParentDirectory(targetDir);
+        fileRepository.save(replaceable);
+    }
+
+    @Override
+    public void copy(UUID copiedId, UUID targetDirId, String username) {
+        NubeculaFile copied = fileRepository.findById(copiedId).orElse(null);
+        NubeculaFile targetDir = fileRepository.findById(targetDirId).orElse(null);
+        if (copied == null) throw new NoSuchNubeculaFileException("Copied file ID not found");
+        if (targetDir == null) throw new NoSuchNubeculaFileException("Target directory ID not found");
+        if (copied.isDirectory()) {
+            if (userStorageService.addToUserStorageSize(username, getSizeOfDirectory(copied))) {
+                throw new StorageException("Not enough space");
+            }
+            for (NubeculaFile file : copied.getNubeculaFiles()) {
+                if (file.isDirectory()) copy(file.getId(), copiedId, username);
+                else {
+                    UUID newFileId = copyFileData(file, copied);
+                    storageService.copy(file.getFileId().toString(), newFileId.toString());
+                }
+            }
+        } else {
+            if (userStorageService.addToUserStorageSize(username, copied.getSize())) {
+                throw new StorageException("Not enough space");
+            }
+            UUID newFileId = copyFileData(copied, targetDir);
+            storageService.copy(copied.getFileId().toString(), newFileId.toString());
+        }
+        copyFileData(copied, targetDir);
+    }
+
+
+    private UUID copyFileData(NubeculaFile copied, NubeculaFile targetDir) {
+        fileRepository.flush();
+        fileRepository.detach(copied);
+            copied.setId(null);
+            copied.setFileId(UUID.randomUUID());
+            copied.setCreateDate(LocalDateTime.now());
+            copied.setShared(false);
+            copied.setParentDirectory(targetDir);
+        return fileRepository.save(copied).getFileId();
+    }
+
+
+    private long getSizeOfDirectory(NubeculaFile directory) {
+        long sum = 0L;
+        for (NubeculaFile file : directory.getNubeculaFiles()) {
+            if (file.isDirectory()) getSizeOfDirectory(file);
+            else {
+                sum += file.getSize();
+            }
+        }
+        return sum;
+    }
+
+
+    @Override
+    public long getSizeOfDirectory(UUID directoryId) {
+        NubeculaFile directory = fileRepository.findById(directoryId).orElse(null);
+        if (directory == null || !directory.isDirectory()) throw new NotNubeculaDirectoryException(directoryId + " is not a directory");
+        return getSizeOfDirectory(directory);
+    }
+
+
+    public void setUserStorageService(UserStorageService userStorageService) {
+        this.userStorageService = userStorageService;
     }
 
 

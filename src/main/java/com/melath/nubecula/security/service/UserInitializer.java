@@ -44,10 +44,25 @@ public class UserInitializer {
                         .password(encoder.encode("password"))
                         .role(Role.ADMIN)
                         .role(Role.USER)
-                        .email("admin@codecool.com")
+                        .email("ize@hoze.com")
                         .registrationDate(LocalDateTime.now())
+                        .storage(999999999999999999L)
+                        .inStorage(-999999999999999999L)
                         .build()
         );
         fileDataService.createDirectory("admin");
+
+        userStorageService.add(
+                NubeculaUser.builder()
+                        .username("Stofi")
+                        .password(encoder.encode("stofasz"))
+                        .role(Role.USER)
+                        .email("melath.stofi@gmail.com")
+                        .registrationDate(LocalDateTime.now())
+                        .storage(3000000L)
+                        .inStorage(0L)
+                        .build()
+        );
+        fileDataService.createDirectory("Stofi");
     }
 }

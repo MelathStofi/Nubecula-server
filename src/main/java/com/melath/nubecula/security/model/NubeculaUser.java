@@ -28,6 +28,10 @@ public class NubeculaUser {
 
     private LocalDateTime registrationDate;
 
+    private long storage;
+
+    private long inStorage;
+
     @ElementCollection
     @Singular
     @Cascade(value = {CascadeType.DELETE})

@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 public interface UserRepository extends JpaRepository<NubeculaUser, Integer> {
@@ -14,7 +13,7 @@ public interface UserRepository extends JpaRepository<NubeculaUser, Integer> {
     Optional<NubeculaUser> findByEmail(String email);
 
     @Query(
-        value="SELECT * FROM nubecula_user",
+        value="SELECT * FROM nubecula_user WHERE username != 'admin'",
         nativeQuery=true
     )
     Stream<NubeculaUser> findAllUsers();

@@ -12,4 +12,8 @@ public class ResponseUser {
     private String username;
 
     private LocalDateTime registrationDate;
+
+    private long storage;
+
+    private long inStorage;
 }

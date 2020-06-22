@@ -1,8 +1,8 @@
 package com.melath.nubecula.security.controller;
 
 import com.melath.nubecula.security.model.NubeculaUser;
-import com.melath.nubecula.security.model.SignInResponseBody;
-import com.melath.nubecula.security.model.UserCredentials;
+import com.melath.nubecula.security.model.response.SignInResponseBody;
+import com.melath.nubecula.security.model.request.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.SignOutException;
 import com.melath.nubecula.security.model.exception.SignUpException;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.nio.file.FileAlreadyExistsException;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;

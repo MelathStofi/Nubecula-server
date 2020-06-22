@@ -41,14 +41,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/").authenticated() // allowed only when signed in
                 .antMatchers("/{id}").authenticated() // allowed only when signed in
                 .antMatchers("/directories").authenticated() // allowed only when signed in
+                .antMatchers("/directories/").authenticated() // allowed only when signed in
                 .antMatchers("/directories/{id}").authenticated() // allowed only when signed in
                 .antMatchers("/files").authenticated() // allowed only when signed in
+                .antMatchers("/files/").authenticated() // allowed only when signed in
                 .antMatchers("/files/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/toggle-share/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/directories/toggle-share/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/files/toggle-share/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/replace/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/directories/replace/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/files/replace/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/copy/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/directories/copy/{id}").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/files/copy/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.GET, "/users/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/users").permitAll()
+                .antMatchers(HttpMethod.GET, "/users/").permitAll()
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:
                 .and()

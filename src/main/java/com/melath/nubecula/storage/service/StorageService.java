@@ -27,4 +27,6 @@ public interface StorageService {
 
     void createDirectory(String name);
 
+    void copy(String filename, String newFilename);
+
 }

@@ -15,8 +15,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/users")
-public class UserFileController {
+public class UserController {
 
     private final CreateResponse createResponse;
 
@@ -25,7 +24,7 @@ public class UserFileController {
     private final FileDataService fileDataService;
 
     @Autowired
-    public UserFileController(
+    public UserController(
             CreateResponse createResponse,
             UserStorageService userStorageService,
             FileDataService fileDataService
@@ -36,13 +35,13 @@ public class UserFileController {
     }
 
 
-    @GetMapping("/")
+    @GetMapping("/users")
     public List<ResponseUser> listAllUsers() {
         return userStorageService.getAllUsers();
     }
 
 
-    @GetMapping("/{username}")
+    @GetMapping("/users/{username}")
     @Transactional
     public ResponseEntity<?> listSharedFiles(
             @PathVariable String username,

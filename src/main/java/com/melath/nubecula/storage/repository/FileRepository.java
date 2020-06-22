@@ -1,6 +1,7 @@
 package com.melath.nubecula.storage.repository;
 
 import com.melath.nubecula.storage.model.NubeculaFile;
+import com.melath.nubecula.storage.repository.custom.FileRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -8,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public interface FileRepository extends JpaRepository<NubeculaFile, UUID> {
+public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileRepositoryCustom {
 
 
     NubeculaFile findByFilename(String filename);
@@ -54,17 +55,10 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID> {
 
 
     @Query(
-            value="SELECT IF((nf.filename = :filename), TRUE, FALSE) FROM nubecula_file nf WHERE nf.parent_directory_id = :parentDirectoryId",
+            value="SELECT CASE WHEN nf.filename = :filename AND nf.extension = :extension OR nf.filename IS NOT NULL THEN TRUE ELSE FALSE END FROM nubecula_file nf WHERE nf.parent_directory_id = :parentDirectoryId",
             nativeQuery=true
     )
-    boolean doesFileAlreadyExist(@Param("filename") String filename, @Param("parentDirectoryId") UUID parentDirectoryId);
-
-
-    @Query(
-            value="DELETE FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId",
-            nativeQuery=true
-    )
-    void deleteAllByParentDirectoryId(@Param("parentDirectoryId") UUID parentDirectoryId);
+    boolean existsInDirectory(@Param("filename") String filename, @Param("extension") String extension, @Param("parentDirectoryId") UUID parentDirectoryId);
 
 
 }
