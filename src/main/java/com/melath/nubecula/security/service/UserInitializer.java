@@ -46,8 +46,8 @@ public class UserInitializer {
                         .role(Role.USER)
                         .email("ize@hoze.com")
                         .registrationDate(LocalDateTime.now())
-                        .storage(999999999999999999L)
-                        .inStorage(-999999999999999999L)
+                        .storage(999999999999L)
+                        .inStorage(0L)
                         .build()
         );
         fileDataService.createDirectory("admin");

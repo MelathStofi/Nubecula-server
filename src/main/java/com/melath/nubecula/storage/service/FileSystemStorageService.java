@@ -137,13 +137,15 @@ public class FileSystemStorageService implements StorageService {
 
 	@Override
 	public void copy(String filename, String newFilename) {
+		System.out.println("filename: " + filename);
+		System.out.println("new filename: " + newFilename);
 		try {
 			Files.copy(
 					Paths.get(rootLocation.toString() + "/" + filename),
-					Paths.get(rootLocation.toString() + "/" + newFilename)
+					rootLocation.resolve(newFilename)
 			);
 		} catch (IOException e) {
-			throw new StorageException("Couldn't copy file: " + filename);
+			throw new StorageException("Couldn't copy file: " + filename + "\n" + e.getMessage());
 		}
 	}
 

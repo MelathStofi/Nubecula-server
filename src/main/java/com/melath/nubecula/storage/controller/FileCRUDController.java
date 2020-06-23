@@ -194,8 +194,10 @@ public class FileCRUDController {
     @PutMapping({"/replace/{id}", "/directories/replace/{id}", "/files/replace{id}"})
     public ResponseEntity<?> replace(
             @PathVariable UUID id,
-            @RequestBody UUID targetDirId
+            @RequestBody( required = false) UUID targetDirId,
+            HttpServletRequest request
     ) {
+        if (targetDirId == null) targetDirId = fileDataService.load(request.getUserPrincipal().getName()).getId();
         try {
             fileDataService.replace(id, targetDirId);
             return ResponseEntity.ok().build();
@@ -208,10 +210,11 @@ public class FileCRUDController {
     @PutMapping({"/copy/{id}", "/directories/copy/{id}", "/files/copy{id}"})
     public ResponseEntity<?> copy(
             @PathVariable UUID id,
-            @RequestBody UUID targetDirId,
+            @RequestBody( required = false ) UUID targetDirId,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
+        if (targetDirId == null) targetDirId = fileDataService.load(username).getId();
         try {
             fileDataService.copy(id, targetDirId, username);
             return ResponseEntity.ok().build();

@@ -185,7 +185,7 @@ public class JpaRepoFileDataService implements FileDataService {
         if (copied == null) throw new NoSuchNubeculaFileException("Copied file ID not found");
         if (targetDir == null) throw new NoSuchNubeculaFileException("Target directory ID not found");
         if (copied.isDirectory()) {
-            if (userStorageService.addToUserStorageSize(username, getSizeOfDirectory(copied))) {
+            if (!userStorageService.addToUserStorageSize(username, getSizeOfDirectory(copied))) {
                 throw new StorageException("Not enough space");
             }
             for (NubeculaFile file : copied.getNubeculaFiles()) {
@@ -196,11 +196,12 @@ public class JpaRepoFileDataService implements FileDataService {
                 }
             }
         } else {
-            if (userStorageService.addToUserStorageSize(username, copied.getSize())) {
+            if (!userStorageService.addToUserStorageSize(username, copied.getSize())) {
                 throw new StorageException("Not enough space");
             }
+            String fileId = copied.getFileId().toString();
             UUID newFileId = copyFileData(copied, targetDir);
-            storageService.copy(copied.getFileId().toString(), newFileId.toString());
+            storageService.copy(fileId, newFileId.toString());
         }
         copyFileData(copied, targetDir);
     }
