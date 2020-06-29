@@ -24,7 +24,7 @@ public class ResponseFile {
 
     private long size;
 
-    private LocalDateTime createDate;
+    private String createDate;
 
     private boolean isDirectory;
 

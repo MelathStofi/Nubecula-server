@@ -9,7 +9,6 @@ import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
-import com.melath.nubecula.storage.service.CreateResponse;
 import com.melath.nubecula.storage.service.FileDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +30,6 @@ public class FileCRUDController {
 
     private final StorageService storageService;
 
-    private final CreateResponse createResponse;
-
     private final FileDataService fileDataService;
 
     private final UserStorageService userStorageService;
@@ -40,12 +37,10 @@ public class FileCRUDController {
     @Autowired
     public FileCRUDController(
             StorageService storageService,
-            CreateResponse createResponse,
             FileDataService fileDataService,
             UserStorageService userStorageService
     ) {
         this.storageService = storageService;
-        this.createResponse = createResponse;
         this.fileDataService = fileDataService;
         this.userStorageService = userStorageService;
     }
@@ -62,7 +57,7 @@ public class FileCRUDController {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
-            return ResponseEntity.ok().body(createResponse.create(fileDataService.loadAll(id, sort, desc)));
+            return ResponseEntity.ok().body(fileDataService.loadAll(id, sort, desc));
 
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);

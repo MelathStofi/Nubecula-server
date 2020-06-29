@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,8 +26,9 @@ public class CreateResponse {
                 responseFile = ResponseFile.builder()
                         .id(nubeculaFile.getId())
                         .filename(nubeculaFile.getFilename())
+                        .type(nubeculaFile.getType())
                         .size(nubeculaFile.getSize())
-                        .createDate(nubeculaFile.getCreateDate())
+                        .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(nubeculaFile.getCreateDate()))
                         .isDirectory(true)
                         .shared(nubeculaFile.isShared())
                         .url(baseUrl + "/" + nubeculaFile.getId())
@@ -37,7 +40,7 @@ public class CreateResponse {
                         .type(nubeculaFile.getType())
                         .extension(nubeculaFile.getExtension())
                         .size(nubeculaFile.getSize())
-                        .createDate(nubeculaFile.getCreateDate())
+                        .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(nubeculaFile.getCreateDate()))
                         .isDirectory(false)
                         .shared(nubeculaFile.isShared())
                         .url(baseUrl + "/files/" + nubeculaFile.getId())

@@ -15,9 +15,8 @@ import java.util.List;
 
 
 @RestController
+@RequestMapping("/users")
 public class UserController {
-
-    private final CreateResponse createResponse;
 
     private final UserStorageService userStorageService;
 
@@ -25,23 +24,21 @@ public class UserController {
 
     @Autowired
     public UserController(
-            CreateResponse createResponse,
             UserStorageService userStorageService,
             FileDataService fileDataService
     ) {
-        this.createResponse = createResponse;
         this.userStorageService = userStorageService;
         this.fileDataService = fileDataService;
     }
 
 
-    @GetMapping("/users")
+    @GetMapping("/")
     public List<ResponseUser> listAllUsers() {
         return userStorageService.getAllUsers();
     }
 
 
-    @GetMapping("/users/{username}")
+    @GetMapping("/{username}")
     @Transactional
     public ResponseEntity<?> listSharedFiles(
             @PathVariable String username,
@@ -49,8 +46,7 @@ public class UserController {
             @RequestParam(required = false, defaultValue = "false") boolean desc
     ) {
         try {
-            List<ResponseFile> files = createResponse.create(fileDataService.loadAllShared(username, sort, desc));
-            return ResponseEntity.ok(files);
+            return ResponseEntity.ok(fileDataService.loadAllShared(username, sort, desc));
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.badRequest().body("User not found");
         }

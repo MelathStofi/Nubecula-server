@@ -5,6 +5,7 @@ import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
+import com.melath.nubecula.storage.model.reponse.ResponseFile;
 import com.melath.nubecula.storage.repository.FileRepository;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Service
 public class JpaRepoFileDataService implements FileDataService {
@@ -24,12 +25,15 @@ public class JpaRepoFileDataService implements FileDataService {
 
     private final StorageService storageService;
 
+    private final CreateResponse createResponse;
+
     private UserStorageService userStorageService;
 
     @Autowired
-    JpaRepoFileDataService(FileRepository fileRepository, StorageService storageService) {
+    JpaRepoFileDataService(FileRepository fileRepository, StorageService storageService, CreateResponse createResponse) {
         this.fileRepository = fileRepository;
         this.storageService = storageService;
+        this.createResponse = createResponse;
     }
 
 
@@ -58,21 +62,21 @@ public class JpaRepoFileDataService implements FileDataService {
 
     @Override
     @Transactional
-    public Stream<NubeculaFile> loadAll(UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException {
+    public List<ResponseFile> loadAll(UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException {
         NubeculaFile file = fileRepository.findById(id).orElse(null);
         if (file == null || !file.isDirectory()) throw new NotNubeculaDirectoryException("Not a directory");
-        if (!desc) return fileRepository.findAllIsDirDescSortAsc(id, sort);
-        else return fileRepository.findAllIsDirDescSortDesc(id, sort);
+        if (!desc) return createResponse.create((fileRepository.findAllIsDirDescSortAsc(id, sort)));
+        else return createResponse.create(fileRepository.findAllIsDirDescSortDesc(id, sort));
     }
 
 
     @Override
     @Transactional
-    public Stream<NubeculaFile> loadAllShared(String username, String sort, boolean desc) throws UsernameNotFoundException {
+    public List<ResponseFile> loadAllShared(String username, String sort, boolean desc) throws UsernameNotFoundException {
         NubeculaFile parentDirectory = fileRepository.findByFilename(username);
         if (parentDirectory == null) throw new UsernameNotFoundException("Username not found");
-        if (!desc) return fileRepository.findAllSharedAsc(parentDirectory.getId(), sort);
-        else return fileRepository.findAllSharedDesc(parentDirectory.getId(), sort);
+        if (!desc) return createResponse.create(fileRepository.findAllSharedAsc(parentDirectory.getId(), sort));
+        else return createResponse.create(fileRepository.findAllSharedDesc(parentDirectory.getId(), sort));
     }
 
 
@@ -223,9 +227,7 @@ public class JpaRepoFileDataService implements FileDataService {
         long sum = 0L;
         for (NubeculaFile file : directory.getNubeculaFiles()) {
             if (file.isDirectory()) getSizeOfDirectory(file);
-            else {
-                sum += file.getSize();
-            }
+            else sum += file.getSize();
         }
         return sum;
     }
