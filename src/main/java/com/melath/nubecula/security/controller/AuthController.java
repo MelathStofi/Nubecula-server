@@ -1,7 +1,7 @@
 package com.melath.nubecula.security.controller;
 
 import com.melath.nubecula.security.model.NubeculaUser;
-import com.melath.nubecula.security.model.response.SignInResponseBody;
+import com.melath.nubecula.security.model.response.UserResponseBody;
 import com.melath.nubecula.security.model.request.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.SignOutException;
@@ -66,7 +66,7 @@ public class AuthController {
     }
 
     @PostMapping("/sign-in")
-    public ResponseEntity<SignInResponseBody> signIn(@RequestBody UserCredentials data, HttpServletResponse response) {
+    public ResponseEntity<UserResponseBody> signIn(@RequestBody UserCredentials data, HttpServletResponse response) {
         try {
             String username = data.getUsername();
             // authenticationManager.authenticate calls loadUserByUsername in CustomUserDetailsService
@@ -77,10 +77,20 @@ public class AuthController {
                     .collect(Collectors.toList());
             String token = jwtTokenServices.generateToken(authentication);
             addTokenToCookie(response, token);
-            SignInResponseBody signInBody = new SignInResponseBody(username, roles);
+            UserResponseBody signInBody = new UserResponseBody(username, roles);
             return ResponseEntity.ok().body(signInBody);
         } catch (AuthenticationException e) {
             return ResponseEntity.status(403).build();
+        }
+    }
+
+    @PutMapping("/user")
+    public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok().body(request.getUserPrincipal().getName());
+
+        } catch (Exception e) {
+            return ResponseEntity.status(405).build();
         }
     }
 

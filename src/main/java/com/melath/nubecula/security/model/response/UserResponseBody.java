@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SignInResponseBody {
+public class UserResponseBody {
     private String username;
     private List<String> roles;
 }
