@@ -84,13 +84,12 @@ public class AuthController {
         }
     }
 
-    @PutMapping("/user")
+    @GetMapping("/user")
     public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
         try {
             return ResponseEntity.ok().body(request.getUserPrincipal().getName());
-
         } catch (Exception e) {
-            return ResponseEntity.status(405).build();
+            return ResponseEntity.status(400).build();
         }
     }
 
