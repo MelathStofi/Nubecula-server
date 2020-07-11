@@ -9,6 +9,8 @@ import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
+import com.melath.nubecula.storage.model.request.RequestDirectory;
+import com.melath.nubecula.storage.service.CreateResponse;
 import com.melath.nubecula.storage.service.FileDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,15 +36,19 @@ public class FileCRUDController {
 
     private final UserStorageService userStorageService;
 
+    private final CreateResponse createResponse;
+
     @Autowired
     public FileCRUDController(
             StorageService storageService,
             FileDataService fileDataService,
-            UserStorageService userStorageService
+            UserStorageService userStorageService,
+            CreateResponse createResponse
     ) {
         this.storageService = storageService;
         this.fileDataService = fileDataService;
         this.userStorageService = userStorageService;
+        this.createResponse = createResponse;
     }
 
     // RETRIEVE
@@ -122,14 +128,15 @@ public class FileCRUDController {
     @PostMapping({"/directories/{id}", "/directories"})
     public ResponseEntity<?> createDirectory(
             @PathVariable( required = false ) UUID id,
-            @RequestBody String dirname,
+            @RequestBody RequestDirectory directory,
             HttpServletRequest request
     ) {
+        String dirname = directory.getName();
+        System.out.println(dirname);
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
-            fileDataService.createDirectory(id, dirname, username);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body(fileDataService.createDirectory(id, dirname, username));
         } catch (StorageException e) {
             log.error(username + " couldn't create directory");
             return ResponseEntity.status(405).body("Directory already exists");
@@ -140,14 +147,14 @@ public class FileCRUDController {
     // UPDATE
     @PutMapping({"/{id}", "/", "/directories/{id}", "/directories", "/files/{id}", "/files"})
     public ResponseEntity<?> rename(
-            @RequestBody String newName,
+            @RequestBody RequestDirectory directory,
             @PathVariable( required = false ) UUID id,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
-            fileDataService.rename(id, newName);
+            fileDataService.rename(id, directory.getName());
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
             log.error(username + " couldn't rename a file");
@@ -189,9 +196,10 @@ public class FileCRUDController {
     @PutMapping({"/replace/{id}", "/directories/replace/{id}", "/files/replace{id}"})
     public ResponseEntity<?> replace(
             @PathVariable UUID id,
-            @RequestBody( required = false) UUID targetDirId,
+            @RequestBody( required = false) RequestDirectory targetDir,
             HttpServletRequest request
     ) {
+        UUID targetDirId = targetDir.getId();
         if (targetDirId == null) targetDirId = fileDataService.load(request.getUserPrincipal().getName()).getId();
         try {
             fileDataService.replace(id, targetDirId);

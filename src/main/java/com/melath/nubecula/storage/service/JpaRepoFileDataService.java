@@ -107,20 +107,19 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
-    public void createDirectory(UUID parentDirId, String dirname, String username) {
+    public ResponseFile createDirectory(UUID parentDirId, String dirname, String username) {
         assert fileRepository.findByFilename(dirname).getSize() == 0;
-        fileRepository.findById(parentDirId).ifPresent(parentDir -> {
-            NubeculaFile fileData = NubeculaFile.builder()
-                    .filename(dirname)
-                    .parentDirectory(parentDir)
-                    .isDirectory(true)
-                    .createDate(LocalDateTime.now())
-                    .type("directory")
-                    .owner(username)
-                    .shared(false)
-                    .build();
-            fileRepository.save(fileData);
-        });
+        NubeculaFile parentDir = fileRepository.findById(parentDirId).orElse(null);
+        NubeculaFile fileData = NubeculaFile.builder()
+                .filename(dirname)
+                .parentDirectory(parentDir)
+                .isDirectory(true)
+                .createDate(LocalDateTime.now())
+                .type("directory")
+                .owner(username)
+                .shared(false)
+                .build();
+        return createResponse.createDir(fileRepository.save(fileData));
     }
 
 

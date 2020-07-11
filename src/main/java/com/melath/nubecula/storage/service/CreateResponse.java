@@ -50,4 +50,31 @@ public class CreateResponse {
         }).collect(Collectors.toList());
     }
 
+    public ResponseFile createDir(NubeculaFile directory) {
+        return ResponseFile.builder()
+                .id(directory.getId())
+                .filename(directory.getFilename())
+                .type(directory.getType())
+                .size(directory.getSize())
+                .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
+                .isDirectory(true)
+                .shared(directory.isShared())
+                .url(baseUrl + "/" + directory.getId())
+                .build();
+    }
+
+    public ResponseFile createFile(NubeculaFile file) {
+        return ResponseFile.builder()
+                .id(file.getId())
+                .filename(file.getFilename())
+                .type(file.getType())
+                .extension(file.getExtension())
+                .size(file.getSize())
+                .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
+                .isDirectory(false)
+                .shared(file.isShared())
+                .url(baseUrl + "/files/" + file.getId())
+                .build();
+    }
+
 }

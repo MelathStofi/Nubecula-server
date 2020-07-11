@@ -20,7 +20,7 @@ public interface FileDataService {
 
     NubeculaFile load(String username);
 
-    void createDirectory(UUID parentDirId, String dirname, String username);
+    ResponseFile createDirectory(UUID parentDirId, String dirname, String username);
 
     void createDirectory(String username);
 
