@@ -51,6 +51,7 @@ public class JpaRepoFileDataService implements FileDataService {
                 .parentDirectory(parentDir)
                 .isDirectory(false)
                 .createDate(LocalDateTime.now())
+                .modificationDate(LocalDateTime.now())
                 .type(file.getContentType())
                 .size(file.getSize())
                 .owner(username)
@@ -98,6 +99,7 @@ public class JpaRepoFileDataService implements FileDataService {
                     .filename(username)
                     .isDirectory(true)
                     .createDate(LocalDateTime.now())
+                    .modificationDate(LocalDateTime.now())
                     .type("directory")
                     .owner(username)
                     .shared(false)
@@ -115,6 +117,7 @@ public class JpaRepoFileDataService implements FileDataService {
                 .parentDirectory(parentDir)
                 .isDirectory(true)
                 .createDate(LocalDateTime.now())
+                .modificationDate(LocalDateTime.now())
                 .type("directory")
                 .owner(username)
                 .shared(false)
@@ -127,6 +130,7 @@ public class JpaRepoFileDataService implements FileDataService {
     public void rename(UUID id, String newName) {
         fileRepository.findById(id).ifPresent(file -> {
             file.setFilename(newName);
+            file.setModificationDate(LocalDateTime.now());
             fileRepository.save(file);
         });
     }
@@ -216,6 +220,7 @@ public class JpaRepoFileDataService implements FileDataService {
             copied.setId(null);
             copied.setFileId(UUID.randomUUID());
             copied.setCreateDate(LocalDateTime.now());
+            copied.setModificationDate(LocalDateTime.now());
             copied.setShared(false);
             copied.setParentDirectory(targetDir);
         return fileRepository.save(copied).getFileId();

@@ -23,28 +23,9 @@ public class CreateResponse {
         return filesInDirectory.map(nubeculaFile -> {
             ResponseFile responseFile;
             if (nubeculaFile.isDirectory()) {
-                responseFile = ResponseFile.builder()
-                        .id(nubeculaFile.getId())
-                        .filename(nubeculaFile.getFilename())
-                        .type(nubeculaFile.getType())
-                        .size(nubeculaFile.getSize())
-                        .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(nubeculaFile.getCreateDate()))
-                        .isDirectory(true)
-                        .shared(nubeculaFile.isShared())
-                        .url(baseUrl + "/" + nubeculaFile.getId())
-                        .build();
+                responseFile = createDir(nubeculaFile);
             } else {
-                responseFile = ResponseFile.builder()
-                        .id(nubeculaFile.getId())
-                        .filename(nubeculaFile.getFilename())
-                        .type(nubeculaFile.getType())
-                        .extension(nubeculaFile.getExtension())
-                        .size(nubeculaFile.getSize())
-                        .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(nubeculaFile.getCreateDate()))
-                        .isDirectory(false)
-                        .shared(nubeculaFile.isShared())
-                        .url(baseUrl + "/files/" + nubeculaFile.getId())
-                        .build();
+                responseFile = createFile(nubeculaFile);
             }
             return responseFile;
         }).collect(Collectors.toList());
@@ -57,6 +38,7 @@ public class CreateResponse {
                 .type(directory.getType())
                 .size(directory.getSize())
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
+                .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getModificationDate()))
                 .isDirectory(true)
                 .shared(directory.isShared())
                 .url(baseUrl + "/" + directory.getId())
@@ -71,6 +53,7 @@ public class CreateResponse {
                 .extension(file.getExtension())
                 .size(file.getSize())
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
+                .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getModificationDate()))
                 .isDirectory(false)
                 .shared(file.isShared())
                 .url(baseUrl + "/files/" + file.getId())

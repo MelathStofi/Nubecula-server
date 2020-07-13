@@ -26,6 +26,8 @@ public class ResponseFile {
 
     private String createDate;
 
+    private String modificationDate;
+
     private boolean isDirectory;
 
     private boolean shared;
