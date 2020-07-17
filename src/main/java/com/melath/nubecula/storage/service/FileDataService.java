@@ -32,7 +32,7 @@ public interface FileDataService {
 
     void replace(UUID replaceableId, UUID targetDirId);
 
-    void copy(UUID copiedId, UUID targetDirId, String username);
+    ResponseFile copy(UUID copiedId, UUID targetDirId, String username);
 
     long getSizeOfDirectory(UUID directoryId);
 

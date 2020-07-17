@@ -40,6 +40,7 @@ public class CreateResponse {
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
                 .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getModificationDate()))
                 .isDirectory(true)
+                .parentDirectoryId(directory.getParentDirectory().getId())
                 .shared(directory.isShared())
                 .url(baseUrl + "/" + directory.getId())
                 .build();
@@ -55,6 +56,7 @@ public class CreateResponse {
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
                 .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getModificationDate()))
                 .isDirectory(false)
+                .parentDirectoryId(file.getParentDirectory().getId())
                 .shared(file.isShared())
                 .url(baseUrl + "/files/" + file.getId())
                 .build();

@@ -186,7 +186,7 @@ public class JpaRepoFileDataService implements FileDataService {
     }
 
     @Override
-    public void copy(UUID copiedId, UUID targetDirId, String username) {
+    public ResponseFile copy(UUID copiedId, UUID targetDirId, String username) {
         NubeculaFile copied = fileRepository.findById(copiedId).orElse(null);
         NubeculaFile targetDir = fileRepository.findById(targetDirId).orElse(null);
         if (copied == null) throw new NoSuchNubeculaFileException("Copied file ID not found");
@@ -195,26 +195,30 @@ public class JpaRepoFileDataService implements FileDataService {
             if (!userStorageService.addToUserStorageSize(username, getSizeOfDirectory(copied))) {
                 throw new StorageException("Not enough space");
             }
+            NubeculaFile newDir = copyFileData(copied, targetDir);
             for (NubeculaFile file : copied.getNubeculaFiles()) {
-                if (file.isDirectory()) copy(file.getId(), copiedId, username);
+                if (file.isDirectory()) copy(file.getId(), newDir.getId(), username);
                 else {
-                    UUID newFileId = copyFileData(file, copied);
-                    storageService.copy(file.getFileId().toString(), newFileId.toString());
+                    String fileId = file.getFileId().toString();
+                    NubeculaFile newFile = copyFileData(file, newDir);
+                    storageService.copy(fileId, newFile.getFileId().toString());
                 }
             }
+            return createResponse.createDir(newDir);
+
         } else {
             if (!userStorageService.addToUserStorageSize(username, copied.getSize())) {
                 throw new StorageException("Not enough space");
             }
             String fileId = copied.getFileId().toString();
-            UUID newFileId = copyFileData(copied, targetDir);
-            storageService.copy(fileId, newFileId.toString());
+            NubeculaFile newFile = copyFileData(copied, targetDir);
+            storageService.copy(fileId, newFile.getFileId().toString());
+            return createResponse.createFile(newFile);
         }
-        copyFileData(copied, targetDir);
     }
 
 
-    private UUID copyFileData(NubeculaFile copied, NubeculaFile targetDir) {
+    private NubeculaFile copyFileData(NubeculaFile copied, NubeculaFile targetDir) {
         fileRepository.flush();
         fileRepository.detach(copied);
             copied.setId(null);
@@ -223,7 +227,7 @@ public class JpaRepoFileDataService implements FileDataService {
             copied.setModificationDate(LocalDateTime.now());
             copied.setShared(false);
             copied.setParentDirectory(targetDir);
-        return fileRepository.save(copied).getFileId();
+        return fileRepository.save(copied);
     }
 
 

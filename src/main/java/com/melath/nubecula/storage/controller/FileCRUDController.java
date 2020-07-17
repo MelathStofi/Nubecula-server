@@ -132,7 +132,6 @@ public class FileCRUDController {
             HttpServletRequest request
     ) {
         String dirname = directory.getName();
-        System.out.println(dirname);
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
@@ -213,14 +212,14 @@ public class FileCRUDController {
     @PutMapping({"/copy/{id}", "/directories/copy/{id}", "/files/copy{id}"})
     public ResponseEntity<?> copy(
             @PathVariable UUID id,
-            @RequestBody( required = false ) UUID targetDirId,
+            @RequestBody( required = false ) RequestDirectory targetDir,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
+        UUID targetDirId = targetDir.getId();
         if (targetDirId == null) targetDirId = fileDataService.load(username).getId();
         try {
-            fileDataService.copy(id, targetDirId, username);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body(fileDataService.copy(id, targetDirId, username));
         } catch (NoSuchNubeculaFileException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (StorageException e) {

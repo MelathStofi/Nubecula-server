@@ -41,7 +41,7 @@ public class UserInitializer {
         userStorageService.add(
                 NubeculaUser.builder()
                         .username("admin")
-                        .password(encoder.encode("password"))
+                        .password(encoder.encode("admin"))
                         .role(Role.ADMIN)
                         .role(Role.USER)
                         .email("ize@hoze.com")
