@@ -55,9 +55,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.PUT, "/copy").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/directories/copy").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/files/copy").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.GET, "/users/**").permitAll()
-                .antMatchers(HttpMethod.GET, "/users").permitAll()
-                .antMatchers(HttpMethod.GET, "/users/").permitAll()
+                .antMatchers(HttpMethod.GET, "/search").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.GET, "/public/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/public").permitAll()
+                .antMatchers(HttpMethod.GET, "/public/{id}").permitAll()
+                .antMatchers(HttpMethod.GET, "/public/search").permitAll()
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:
                 .and()

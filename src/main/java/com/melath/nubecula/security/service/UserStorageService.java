@@ -2,6 +2,7 @@ package com.melath.nubecula.security.service;
 
 import com.melath.nubecula.security.model.NubeculaUser;
 import com.melath.nubecula.security.model.Role;
+import com.melath.nubecula.security.model.exception.NoSuchUserException;
 import com.melath.nubecula.security.model.request.UserCredentials;
 import com.melath.nubecula.security.model.exception.EmailAlreadyExistsException;
 import com.melath.nubecula.security.model.exception.UsernameAlreadyExistsException;
@@ -67,6 +68,21 @@ public class UserStorageService {
                 .orElseThrow(() -> new UsernameNotFoundException("Username is not found"));
     }
 
+    public ResponseUser getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if ((authentication instanceof AnonymousAuthenticationToken)) {
+            throw new NoSuchUserException("No such user");
+        }
+        String currentUserName = authentication.getName();
+        NubeculaUser user = getByName(currentUserName);
+        return ResponseUser.builder()
+                .username(user.getUsername())
+                .registrationDate(user.getRegistrationDate())
+                .storage(user.getStorage())
+                .inStorage(user.getInStorage())
+                .build();
+
+    }
 
     @Transactional
     public List<ResponseUser> getAllUsers() {

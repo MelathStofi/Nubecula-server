@@ -36,4 +36,6 @@ public interface FileDataService {
 
     long getSizeOfDirectory(UUID directoryId);
 
+    List<ResponseFile> search(String searched, String username);
+
 }

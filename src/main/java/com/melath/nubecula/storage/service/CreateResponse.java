@@ -2,10 +2,13 @@ package com.melath.nubecula.storage.service;
 
 import com.melath.nubecula.storage.model.NubeculaFile;
 import com.melath.nubecula.storage.model.reponse.ResponseFile;
+import com.melath.nubecula.util.NubeculaUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.List;
@@ -36,7 +39,7 @@ public class CreateResponse {
                 .id(directory.getId())
                 .filename(directory.getFilename())
                 .type(directory.getType())
-                .size(directory.getSize())
+                .size(NubeculaUtils.getSizeString(directory.getSize()))
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
                 .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getModificationDate()))
                 .isDirectory(true)
@@ -52,7 +55,7 @@ public class CreateResponse {
                 .filename(file.getFilename())
                 .type(file.getType())
                 .extension(file.getExtension())
-                .size(file.getSize())
+                .size(NubeculaUtils.getSizeString(file.getSize()))
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
                 .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getModificationDate()))
                 .isDirectory(false)

@@ -252,9 +252,15 @@ public class JpaRepoFileDataService implements FileDataService {
     }
 
 
+    @Override
+    @Transactional
+    public List<ResponseFile> search(String searched, String username) {
+        return createResponse.create(fileRepository.searchByFilename(searched, username));
+    }
+
+
     public void setUserStorageService(UserStorageService userStorageService) {
         this.userStorageService = userStorageService;
     }
-
 
 }

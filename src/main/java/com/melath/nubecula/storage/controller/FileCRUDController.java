@@ -184,7 +184,6 @@ public class FileCRUDController {
         String username = request.getUserPrincipal().getName();
         if (id == null) id = fileDataService.load(username).getId();
         try {
-            storageService.delete(id.toString());
             fileDataService.delete(id);
             return ResponseEntity.ok().build();
         }
