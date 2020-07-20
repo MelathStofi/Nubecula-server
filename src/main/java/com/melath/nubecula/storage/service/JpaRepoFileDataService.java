@@ -176,13 +176,16 @@ public class JpaRepoFileDataService implements FileDataService {
     }
 
     @Override
-    public void replace(UUID replaceableId, UUID targetDirId) {
+    public ResponseFile replace(UUID replaceableId, UUID targetDirId) {
         NubeculaFile replaceable = fileRepository.findById(replaceableId).orElse(null);
         NubeculaFile targetDir = fileRepository.findById(targetDirId).orElse(null);
         if (replaceable == null) throw new NoSuchNubeculaFileException("replaced file ID not found");
         if (targetDir == null) throw new NoSuchNubeculaFileException("Target directory ID not found");
         replaceable.setParentDirectory(targetDir);
-        fileRepository.save(replaceable);
+        NubeculaFile savedFile = fileRepository.save(replaceable);
+        if (replaceable.isDirectory())
+        return createResponse.createDir(savedFile);
+        else return createResponse.createFile(fileRepository.save(savedFile));
     }
 
     @Override
@@ -221,12 +224,12 @@ public class JpaRepoFileDataService implements FileDataService {
     private NubeculaFile copyFileData(NubeculaFile copied, NubeculaFile targetDir) {
         fileRepository.flush();
         fileRepository.detach(copied);
-            copied.setId(null);
-            copied.setFileId(UUID.randomUUID());
-            copied.setCreateDate(LocalDateTime.now());
-            copied.setModificationDate(LocalDateTime.now());
-            copied.setShared(false);
-            copied.setParentDirectory(targetDir);
+        copied.setId(null);
+        copied.setFileId(UUID.randomUUID());
+        copied.setCreateDate(LocalDateTime.now());
+        copied.setModificationDate(LocalDateTime.now());
+        copied.setShared(false);
+        copied.setParentDirectory(targetDir);
         return fileRepository.save(copied);
     }
 

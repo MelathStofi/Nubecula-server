@@ -30,7 +30,7 @@ public interface FileDataService {
 
     void toggleShare(UUID id);
 
-    void replace(UUID replaceableId, UUID targetDirId);
+    ResponseFile replace(UUID replaceableId, UUID targetDirId);
 
     ResponseFile copy(UUID copiedId, UUID targetDirId, String username);
 

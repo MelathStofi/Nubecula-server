@@ -1,5 +1,6 @@
 package com.melath.nubecula.storage.controller;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -9,6 +10,8 @@ import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
 import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.exceptions.StorageException;
 import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
+import com.melath.nubecula.storage.model.reponse.ResponseFile;
+import com.melath.nubecula.storage.model.request.RequestAction;
 import com.melath.nubecula.storage.model.request.RequestDirectory;
 import com.melath.nubecula.storage.service.CreateResponse;
 import com.melath.nubecula.storage.service.FileDataService;
@@ -192,34 +195,40 @@ public class FileCRUDController {
     }
 
     // UPDATE
-    @PutMapping({"/replace/{id}", "/directories/replace/{id}", "/files/replace{id}"})
+    @PutMapping({"/replace", "/directories/replace", "/files/replace"})
     public ResponseEntity<?> replace(
-            @PathVariable UUID id,
-            @RequestBody( required = false) RequestDirectory targetDir,
+            @RequestBody( required = false) RequestAction requestAction,
             HttpServletRequest request
     ) {
-        UUID targetDirId = targetDir.getId();
+
+        UUID targetDirId = requestAction.getTargetDirId();
         if (targetDirId == null) targetDirId = fileDataService.load(request.getUserPrincipal().getName()).getId();
         try {
-            fileDataService.replace(id, targetDirId);
-            return ResponseEntity.ok().build();
+            ResponseFile[] responseFiles = new ResponseFile[requestAction.getFiles().size()];
+            for (int i = 0; i < requestAction.getFiles().size(); i++) {
+                responseFiles[i] = fileDataService.replace(requestAction.getFiles().get(i).getId(), targetDirId);
+            }
+            return ResponseEntity.ok().body(responseFiles);
         } catch (NoSuchNubeculaFileException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // CREATE
-    @PutMapping({"/copy/{id}", "/directories/copy/{id}", "/files/copy{id}"})
+    @PutMapping({"/copy", "/directories/copy", "/files/copy"})
     public ResponseEntity<?> copy(
-            @PathVariable UUID id,
-            @RequestBody( required = false ) RequestDirectory targetDir,
+            @RequestBody( required = false ) RequestAction requestAction,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
-        UUID targetDirId = targetDir.getId();
+        UUID targetDirId = requestAction.getTargetDirId();
         if (targetDirId == null) targetDirId = fileDataService.load(username).getId();
         try {
-            return ResponseEntity.ok().body(fileDataService.copy(id, targetDirId, username));
+            ResponseFile[] responseFiles = new ResponseFile[requestAction.getFiles().size()];
+            for (int i = 0; i < requestAction.getFiles().size(); i++) {
+                responseFiles[i] = fileDataService.copy(requestAction.getFiles().get(i).getId(), targetDirId, username);
+            }
+            return ResponseEntity.ok().body(responseFiles);
         } catch (NoSuchNubeculaFileException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (StorageException e) {
