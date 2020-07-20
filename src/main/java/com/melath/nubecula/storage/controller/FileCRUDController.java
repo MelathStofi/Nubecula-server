@@ -99,24 +99,27 @@ public class FileCRUDController {
     @PostMapping({"/{id}", "/", "/files/{id}", "/files"})
     public ResponseEntity<?> handleFileUpload(
             @PathVariable( required = false ) UUID id,
-            @RequestParam("files") Set<MultipartFile> files,
+            @RequestParam("files") List<MultipartFile> files,
             HttpServletRequest request
     ) {
+        System.out.println(files.toString());
         String username = request.getUserPrincipal().getName();
         try {
             if (id == null) id = fileDataService.load(username).getId();
             if (!userStorageService.addToUserStorageSize(username, files)) throw new StorageException("Not enough space");
             final UUID finalId = id;
-            files.forEach(file -> {
-                NubeculaFile savedFile = fileDataService.store(finalId, file, username);
+            ResponseFile[] responseFiles = new ResponseFile[files.size()];
+            for (int i = 0; i < files.size(); i++) {
+                NubeculaFile savedFile = fileDataService.store(finalId, files.get(i), username);
+                responseFiles[i] = createResponse.createFile(savedFile);
                 try {
-                    storageService.store(file, savedFile.getFileId());
+                    storageService.store(files.get(i), savedFile.getFileId());
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     fileDataService.delete(savedFile.getId());
                 }
-            });
-            return ResponseEntity.ok().build();
+            }
+            return ResponseEntity.ok().body(responseFiles);
         } catch (StorageException e) {
             log.error(username + " couldn't upload file(s) due to space deficit");
             return ResponseEntity.status(507).body(e.getMessage());
@@ -176,16 +179,16 @@ public class FileCRUDController {
     }
 
     // DELETE
-    @DeleteMapping({"/{id}", "/", "/directories/{id}", "/directories", "/files/{id}", "/files"})
+    @DeleteMapping({"/{id}", "/directories/{id}", "/files{id}"})
     public ResponseEntity<?> delete(
-            @PathVariable( required = false ) UUID id,
+            @PathVariable UUID id,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
-        if (id == null) id = fileDataService.load(username).getId();
         try {
+            NubeculaFile file = fileDataService.load(id);
             fileDataService.delete(id);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body(file.isDirectory() ? createResponse.createDir(file) : createResponse.createFile(file));
         }
         catch (NoSuchNubeculaFileException e){
             log.error(username + " couldn't delete a file");
@@ -196,7 +199,7 @@ public class FileCRUDController {
     // UPDATE
     @PutMapping({"/replace", "/directories/replace", "/files/replace"})
     public ResponseEntity<?> replace(
-            @RequestBody( required = false) RequestAction requestAction,
+            @RequestBody RequestAction requestAction,
             HttpServletRequest request
     ) {
 
@@ -216,7 +219,7 @@ public class FileCRUDController {
     // CREATE
     @PutMapping({"/copy", "/directories/copy", "/files/copy"})
     public ResponseEntity<?> copy(
-            @RequestBody( required = false ) RequestAction requestAction,
+            @RequestBody RequestAction requestAction,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();

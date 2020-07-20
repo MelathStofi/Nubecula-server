@@ -157,6 +157,13 @@ public class JpaRepoFileDataService implements FileDataService {
         fileRepository.deleteById(id);
     }
 
+    @Override
+    public void deleteAll(List<ResponseFile> files) {
+        for (ResponseFile file : files) {
+            delete(file.getId());
+        }
+    }
+
 
     @Override
     public void toggleShare(UUID id) {

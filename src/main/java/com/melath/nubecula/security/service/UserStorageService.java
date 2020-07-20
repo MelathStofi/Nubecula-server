@@ -137,7 +137,7 @@ public class UserStorageService {
     }
 
 
-    public boolean addToUserStorageSize(String username, Set<MultipartFile> files) throws UsernameNotFoundException {
+    public boolean addToUserStorageSize(String username, List<MultipartFile> files) throws UsernameNotFoundException {
         NubeculaUser user = getByName(username);
         long sumSize = files.stream().mapToLong(MultipartFile::getSize).sum() + user.getInStorage();
         if (user.getStorage() >= sumSize) {

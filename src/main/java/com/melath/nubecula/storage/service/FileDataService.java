@@ -28,6 +28,8 @@ public interface FileDataService {
 
     void delete(UUID id);
 
+    void deleteAll(List<ResponseFile> files);
+
     void toggleShare(UUID id);
 
     ResponseFile replace(UUID replaceableId, UUID targetDirId);
