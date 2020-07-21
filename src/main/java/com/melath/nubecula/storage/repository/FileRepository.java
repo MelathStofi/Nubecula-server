@@ -14,6 +14,8 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
 
     NubeculaFile findByFilename(String filename);
 
+    @Query(value="SELECT nf FROM NubeculaFile nf WHERE nf.owner = :owner AND nf.filename LIKE %:searched%")
+    Stream<NubeculaFile> searchByFilename(@Param("searched") String searched, @Param("owner") String owner);
 
     @Query(
             value="SELECT * FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId ORDER BY is_directory DESC, :sort DESC",
@@ -59,6 +61,7 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
             nativeQuery=true
     )
     boolean existsInDirectory(@Param("filename") String filename, @Param("extension") String extension, @Param("parentDirectoryId") UUID parentDirectoryId);
+
 
 
 }

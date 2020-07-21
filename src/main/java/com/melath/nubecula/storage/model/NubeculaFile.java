@@ -3,7 +3,6 @@ package com.melath.nubecula.storage.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -37,6 +36,8 @@ public class NubeculaFile {
 
     @Basic
     private LocalDateTime createDate;
+
+    private LocalDateTime modificationDate;
 
     private boolean isDirectory;
 
@@ -106,6 +107,14 @@ public class NubeculaFile {
 
     public void setCreateDate(LocalDateTime createDate) {
         this.createDate = createDate;
+    }
+
+    public LocalDateTime getModificationDate() {
+        return modificationDate;
+    }
+
+    public void setModificationDate(LocalDateTime modificationDate) {
+        this.modificationDate = modificationDate;
     }
 
     public boolean isDirectory() {

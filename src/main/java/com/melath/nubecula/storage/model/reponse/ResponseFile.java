@@ -22,11 +22,15 @@ public class ResponseFile {
 
     private String type;
 
-    private long size;
+    private String size;
 
-    private LocalDateTime createDate;
+    private String createDate;
+
+    private String modificationDate;
 
     private boolean isDirectory;
+
+    private UUID parentDirectoryId;
 
     private boolean shared;
 

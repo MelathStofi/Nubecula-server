@@ -10,6 +10,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+import java.text.SimpleDateFormat;
+
 @SpringBootApplication
 @EnableConfigurationProperties(StorageProperties.class)
 public class NubeculaApplication {
