@@ -1,6 +1,6 @@
 package com.melath.nubecula.storage.repository.custom;
 
-import com.melath.nubecula.storage.model.NubeculaFile;
+import com.melath.nubecula.storage.model.entity.NubeculaFile;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;

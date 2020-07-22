@@ -32,6 +32,8 @@ public class ResponseFile {
 
     private UUID parentDirectoryId;
 
+
+
     private boolean shared;
 
     private String url;

@@ -10,8 +10,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.melath.nubecula.storage.config.StorageProperties;
-import com.melath.nubecula.storage.model.exceptions.StorageException;
-import com.melath.nubecula.storage.model.exceptions.StorageFileNotFoundException;
+import com.melath.nubecula.storage.model.exception.StorageException;
+import com.melath.nubecula.storage.model.exception.StorageFileNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
