@@ -1,10 +1,11 @@
 package com.melath.nubecula.storage.service;
 
-import com.melath.nubecula.security.service.UserStorageService;
-import com.melath.nubecula.storage.model.NubeculaFile;
-import com.melath.nubecula.storage.model.exceptions.NoSuchNubeculaFileException;
-import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
-import com.melath.nubecula.storage.model.exceptions.StorageException;
+import com.melath.nubecula.user.model.entity.NubeculaUser;
+import com.melath.nubecula.user.service.UserService;
+import com.melath.nubecula.storage.model.entity.NubeculaFile;
+import com.melath.nubecula.storage.model.exception.NoSuchNubeculaFileException;
+import com.melath.nubecula.storage.model.exception.NotNubeculaDirectoryException;
+import com.melath.nubecula.storage.model.exception.StorageException;
 import com.melath.nubecula.storage.model.reponse.ResponseFile;
 import com.melath.nubecula.storage.repository.FileRepository;
 import org.apache.commons.io.FilenameUtils;
@@ -15,7 +16,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -27,7 +30,7 @@ public class JpaRepoFileDataService implements FileDataService {
 
     private final CreateResponse createResponse;
 
-    private UserStorageService userStorageService;
+    private UserService userService;
 
     @Autowired
     JpaRepoFileDataService(FileRepository fileRepository, StorageService storageService, CreateResponse createResponse) {
@@ -38,7 +41,7 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
-    public NubeculaFile store(UUID parentDirId, MultipartFile file, String username) {
+    public NubeculaFile store(UUID parentDirId, MultipartFile file, NubeculaUser user) {
         String filename = FilenameUtils.getBaseName(file.getOriginalFilename());
         String extension = FilenameUtils.getExtension(file.getOriginalFilename());
         assert !fileRepository.existsInDirectory(filename, extension, parentDirId) : file.getOriginalFilename() + " already exists!";
@@ -54,7 +57,7 @@ public class JpaRepoFileDataService implements FileDataService {
                 .modificationDate(LocalDateTime.now())
                 .type(file.getContentType())
                 .size(file.getSize())
-                .owner(username)
+                .owner(user)
                 .shared(false)
                 .build();
         return fileRepository.save(fileData);
@@ -73,11 +76,10 @@ public class JpaRepoFileDataService implements FileDataService {
 
     @Override
     @Transactional
-    public List<ResponseFile> loadAllShared(String username, String sort, boolean desc) throws UsernameNotFoundException {
-        NubeculaFile parentDirectory = fileRepository.findByFilename(username);
-        if (parentDirectory == null) throw new UsernameNotFoundException("Username not found");
-        if (!desc) return createResponse.create(fileRepository.findAllSharedAsc(parentDirectory.getId(), sort));
-        else return createResponse.create(fileRepository.findAllSharedDesc(parentDirectory.getId(), sort));
+    public List<ResponseFile> loadAllShared(NubeculaUser user, String sort, boolean desc) throws UsernameNotFoundException {
+        if (user.getRootDirectoryId() == null) throw new UsernameNotFoundException("Username not found");
+        if (!desc) return createResponse.create(fileRepository.findAllSharedAsc(user.getRootDirectoryId(), sort));
+        else return createResponse.create(fileRepository.findAllSharedDesc(user.getRootDirectoryId(), sort));
     }
 
 
@@ -88,30 +90,37 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
-    public NubeculaFile load(String username) {
-        return fileRepository.findByFilename(username);
+    public Map<String, UUID> createRootDirectory(NubeculaUser user) {
+        NubeculaFile root = NubeculaFile.builder()
+                .filename(user.getUsername() + " root")
+                .isDirectory(true)
+                .createDate(LocalDateTime.now())
+                .modificationDate(LocalDateTime.now())
+                .type("root")
+                .owner(user)
+                .shared(false)
+                .build();
+        NubeculaFile trashBin = NubeculaFile.builder()
+                .filename(user.getUsername() + " trash bin")
+                .isDirectory(true)
+                .createDate(LocalDateTime.now())
+                .modificationDate(LocalDateTime.now())
+                .type("trash bin")
+                .owner(user)
+                .shared(false)
+                .build();
+        return Map.of("root", fileRepository.save(root).getId(), "trashBin", fileRepository.save(trashBin).getId());
     }
 
 
     @Override
-    public void createDirectory(String username) {
-            NubeculaFile fileData = NubeculaFile.builder()
-                    .filename(username)
-                    .isDirectory(true)
-                    .createDate(LocalDateTime.now())
-                    .modificationDate(LocalDateTime.now())
-                    .type("directory")
-                    .owner(username)
-                    .shared(false)
-                    .build();
-            fileRepository.save(fileData);
-    }
-
-
-    @Override
-    public ResponseFile createDirectory(UUID parentDirId, String dirname, String username) {
+    public ResponseFile createDirectory(UUID parentDirId, String dirname, NubeculaUser user) {
         assert fileRepository.findByFilename(dirname).getSize() == 0;
         NubeculaFile parentDir = fileRepository.findById(parentDirId).orElse(null);
+        long inSequence = fileRepository.countByFilenameAndParentDirectoryId(dirname, parentDirId);
+        if (inSequence != 0L) {
+            dirname = dirname + "(" + inSequence + ")";
+        }
         NubeculaFile fileData = NubeculaFile.builder()
                 .filename(dirname)
                 .parentDirectory(parentDir)
@@ -119,7 +128,7 @@ public class JpaRepoFileDataService implements FileDataService {
                 .createDate(LocalDateTime.now())
                 .modificationDate(LocalDateTime.now())
                 .type("directory")
-                .owner(username)
+                .owner(user)
                 .shared(false)
                 .build();
         return createResponse.createDir(fileRepository.save(fileData));
@@ -128,11 +137,16 @@ public class JpaRepoFileDataService implements FileDataService {
 
     @Override
     public void rename(UUID id, String newName) {
-        fileRepository.findById(id).ifPresent(file -> {
+        NubeculaFile file = fileRepository.findById(id).orElse(null);
+        assert file != null;
+        NubeculaFile parentDir = file.getParentDirectory();
+        long inSequence = fileRepository.countByFilenameAndParentDirectoryId(newName, parentDir.getId());
+        if (inSequence != 0L) {
+            newName = newName + "(" + inSequence + ")";
+        }
             file.setFilename(newName);
             file.setModificationDate(LocalDateTime.now());
             fileRepository.save(file);
-        });
     }
 
 
@@ -146,22 +160,15 @@ public class JpaRepoFileDataService implements FileDataService {
                     delete(file.getId());
                 } else {
                     storageService.delete(file.getFileId().toString());
-                    userStorageService.deleteFromUserStorageSize(file.getSize());
+                    userService.deleteFromUserStorageSize(file.getSize());
                     fileRepository.deleteById(file.getId());
                 }
             }
         } else {
             storageService.delete(virtualPath.getFileId().toString());
-            userStorageService.deleteFromUserStorageSize(virtualPath.getSize());
+            userService.deleteFromUserStorageSize(virtualPath.getSize());
         }
         fileRepository.deleteById(id);
-    }
-
-    @Override
-    public void deleteAll(List<ResponseFile> files) {
-        for (ResponseFile file : files) {
-            delete(file.getId());
-        }
     }
 
 
@@ -182,6 +189,7 @@ public class JpaRepoFileDataService implements FileDataService {
         fileRepository.save(virtualPath);
     }
 
+
     @Override
     public ResponseFile replace(UUID replaceableId, UUID targetDirId) {
         NubeculaFile replaceable = fileRepository.findById(replaceableId).orElse(null);
@@ -195,19 +203,20 @@ public class JpaRepoFileDataService implements FileDataService {
         else return createResponse.createFile(fileRepository.save(savedFile));
     }
 
+
     @Override
-    public ResponseFile copy(UUID copiedId, UUID targetDirId, String username) {
+    public ResponseFile copy(UUID copiedId, UUID targetDirId, NubeculaUser user) {
         NubeculaFile copied = fileRepository.findById(copiedId).orElse(null);
         NubeculaFile targetDir = fileRepository.findById(targetDirId).orElse(null);
         if (copied == null) throw new NoSuchNubeculaFileException("Copied file ID not found");
         if (targetDir == null) throw new NoSuchNubeculaFileException("Target directory ID not found");
         if (copied.isDirectory()) {
-            if (!userStorageService.addToUserStorageSize(username, getSizeOfDirectory(copied))) {
+            if (!userService.addToUserStorageSize(user, getSizeOfDirectory(copied))) {
                 throw new StorageException("Not enough space");
             }
             NubeculaFile newDir = copyFileData(copied, targetDir);
             for (NubeculaFile file : copied.getNubeculaFiles()) {
-                if (file.isDirectory()) copy(file.getId(), newDir.getId(), username);
+                if (file.isDirectory()) copy(file.getId(), newDir.getId(), user);
                 else {
                     String fileId = file.getFileId().toString();
                     NubeculaFile newFile = copyFileData(file, newDir);
@@ -217,7 +226,7 @@ public class JpaRepoFileDataService implements FileDataService {
             return createResponse.createDir(newDir);
 
         } else {
-            if (!userStorageService.addToUserStorageSize(username, copied.getSize())) {
+            if (!userService.addToUserStorageSize(user, copied.getSize())) {
                 throw new StorageException("Not enough space");
             }
             String fileId = copied.getFileId().toString();
@@ -252,22 +261,24 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
-    public long getSizeOfDirectory(UUID directoryId) {
+    public int getSizeOfDirectory(UUID directoryId) {
         NubeculaFile directory = fileRepository.findById(directoryId).orElse(null);
-        if (directory == null || !directory.isDirectory()) throw new NotNubeculaDirectoryException(directoryId + " is not a directory");
-        return getSizeOfDirectory(directory);
+        if (directory == null || !directory.isDirectory()) return 0;
+        return (int) getSizeOfDirectory(directory);
     }
 
 
     @Override
     @Transactional
-    public List<ResponseFile> search(String searched, String username) {
-        return createResponse.create(fileRepository.searchByFilename(searched, username));
+    public List<ResponseFile> search(String searched, boolean anywhere, NubeculaUser user) {
+        if (anywhere)
+        return createResponse.create(fileRepository.searchByFilenameAnywhere(searched, user));
+        else return createResponse.create(fileRepository.searchByFilenameBeginning(searched, user));
     }
 
 
-    public void setUserStorageService(UserStorageService userStorageService) {
-        this.userStorageService = userStorageService;
+    public void setUserService(UserService userService) {
+        this.userService = userService;
     }
 
 }

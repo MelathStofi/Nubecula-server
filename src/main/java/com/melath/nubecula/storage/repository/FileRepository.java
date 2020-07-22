@@ -1,7 +1,8 @@
 package com.melath.nubecula.storage.repository;
 
-import com.melath.nubecula.storage.model.NubeculaFile;
+import com.melath.nubecula.storage.model.entity.NubeculaFile;
 import com.melath.nubecula.storage.repository.custom.FileRepositoryCustom;
+import com.melath.nubecula.user.model.entity.NubeculaUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,11 +15,16 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
 
     NubeculaFile findByFilename(String filename);
 
-    @Query(value="SELECT nf FROM NubeculaFile nf WHERE nf.owner = :owner AND nf.filename LIKE %:searched%")
-    Stream<NubeculaFile> searchByFilename(@Param("searched") String searched, @Param("owner") String owner);
+    long countByFilenameAndParentDirectoryId(String filename, UUID parentDirectoryId);
+
+    @Query(value="SELECT nf FROM NubeculaFile nf WHERE nf.parentDirectory.id IS NOT NULL AND nf.owner = :owner AND nf.filename LIKE %:searched% ORDER BY nf.isDirectory DESC")
+    Stream<NubeculaFile> searchByFilenameAnywhere(@Param("searched") String searched, @Param("owner") NubeculaUser owner);
+
+    @Query(value="SELECT nf FROM NubeculaFile nf WHERE nf.parentDirectory.id IS NOT NULL AND nf.owner = :owner AND nf.filename LIKE :searched% ORDER BY nf.isDirectory DESC")
+    Stream<NubeculaFile> searchByFilenameBeginning(@Param("searched") String searched, @Param("owner") NubeculaUser owner);
 
     @Query(
-            value="SELECT * FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId ORDER BY is_directory DESC, :sort DESC",
+            value="SELECT * FROM file WHERE parent_directory_id = :parentDirectoryId ORDER BY is_directory DESC, :sort DESC",
             nativeQuery=true
     )
     Stream<NubeculaFile> findAllIsDirDescSortDesc(
@@ -27,7 +33,7 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
     );
 
     @Query(
-            value="SELECT * FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId ORDER BY is_directory DESC, :sort",
+            value="SELECT * FROM file WHERE parent_directory_id = :parentDirectoryId ORDER BY is_directory DESC, :sort",
             nativeQuery=true
     )
     Stream<NubeculaFile> findAllIsDirDescSortAsc(
@@ -37,7 +43,7 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
 
 
     @Query(
-            value="SELECT * FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId AND shared = TRUE ORDER BY is_directory DESC, :sort DESC",
+            value="SELECT * FROM file WHERE parent_directory_id = :parentDirectoryId AND shared = TRUE ORDER BY is_directory DESC, :sort DESC",
             nativeQuery=true
     )
     Stream<NubeculaFile> findAllSharedDesc(
@@ -47,7 +53,7 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
 
 
     @Query(
-            value="SELECT * FROM nubecula_file WHERE parent_directory_id = :parentDirectoryId AND shared = TRUE ORDER BY is_directory DESC, :sort",
+            value="SELECT * FROM file WHERE parent_directory_id = :parentDirectoryId AND shared = TRUE ORDER BY is_directory DESC, :sort",
             nativeQuery=true
     )
     Stream<NubeculaFile> findAllSharedAsc(
@@ -57,7 +63,7 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
 
 
     @Query(
-            value="SELECT CASE WHEN nf.filename = :filename AND nf.extension = :extension OR nf.filename IS NOT NULL THEN TRUE ELSE FALSE END FROM nubecula_file nf WHERE nf.parent_directory_id = :parentDirectoryId",
+            value="SELECT CASE WHEN nf.filename = :filename AND nf.extension = :extension OR nf.filename IS NOT NULL THEN TRUE ELSE FALSE END FROM file nf WHERE nf.parent_directory_id = :parentDirectoryId",
             nativeQuery=true
     )
     boolean existsInDirectory(@Param("filename") String filename, @Param("extension") String extension, @Param("parentDirectoryId") UUID parentDirectoryId);

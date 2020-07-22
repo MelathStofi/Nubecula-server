@@ -1,43 +1,41 @@
 package com.melath.nubecula.storage.service;
 
-import com.melath.nubecula.storage.model.NubeculaFile;
-import com.melath.nubecula.storage.model.exceptions.NotNubeculaDirectoryException;
+import com.melath.nubecula.user.model.entity.NubeculaUser;
+import com.melath.nubecula.storage.model.entity.NubeculaFile;
+import com.melath.nubecula.storage.model.exception.NotNubeculaDirectoryException;
 import com.melath.nubecula.storage.model.reponse.ResponseFile;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface FileDataService {
-    NubeculaFile store(UUID parentDirId, MultipartFile file, String username);
+    NubeculaFile store(UUID parentDirId, MultipartFile file, NubeculaUser user);
 
     List<ResponseFile> loadAll(UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException;
 
-    List<ResponseFile> loadAllShared(String username, String sort, boolean desc) throws UsernameNotFoundException;
+    List<ResponseFile> loadAllShared(NubeculaUser user, String sort, boolean desc) throws UsernameNotFoundException;
 
     NubeculaFile load(UUID id);
 
-    NubeculaFile load(String username);
+    ResponseFile createDirectory(UUID parentDirId, String dirname, NubeculaUser user);
 
-    ResponseFile createDirectory(UUID parentDirId, String dirname, String username);
-
-    void createDirectory(String username);
+    Map<String, UUID> createRootDirectory(NubeculaUser user);
 
     void rename(UUID id, String newName);
 
     void delete(UUID id);
 
-    void deleteAll(List<ResponseFile> files);
-
     void toggleShare(UUID id);
 
     ResponseFile replace(UUID replaceableId, UUID targetDirId);
 
-    ResponseFile copy(UUID copiedId, UUID targetDirId, String username);
+    ResponseFile copy(UUID copiedId, UUID targetDirId, NubeculaUser user);
 
-    long getSizeOfDirectory(UUID directoryId);
+    int getSizeOfDirectory(UUID directoryId);
 
-    List<ResponseFile> search(String searched, String username);
+    List<ResponseFile> search(String searched, boolean anywhere, NubeculaUser user);
 
 }
