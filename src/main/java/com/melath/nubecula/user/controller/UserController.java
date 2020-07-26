@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -43,9 +45,12 @@ public class UserController {
     }
 
 
-    @GetMapping("/all")
-    public List<ResponseUser> listAllUsers() {
-        return userService.getAllUsers();
+    @GetMapping("/")
+    public List<ResponseUser> listAllUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) boolean anywhere
+    ) {
+        return search != null ? userService.searchUser(search, anywhere) : userService.getAllUsers();
     }
 
 
@@ -53,8 +58,22 @@ public class UserController {
     public ResponseEntity<?> getPublicUser(@PathVariable String username) {
         try {
             return ResponseEntity.ok().body(userService.getPublicUser(username));
-        } catch (UsernameNotFoundException e) {
-            return ResponseEntity.badRequest().body("Username not found");
+        } catch (NoSuchUserException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
+    @PostMapping("/image")
+    public ResponseEntity<?> uploadProfilePicture(
+            @RequestParam("file")MultipartFile image,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            return ResponseEntity.ok().body(userService.storeProfilePicture(username, image));
+        } catch (IOException e) {
+            return ResponseEntity.badRequest().body("Cannot store image");
         }
     }
 

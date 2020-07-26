@@ -46,6 +46,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/files").authenticated() // allowed only when signed in
                 .antMatchers("/files/").authenticated() // allowed only when signed in
                 .antMatchers("/files/{id}").authenticated() // allowed only when signed in
+                .antMatchers("/trash-bin").authenticated() // allowed only when signed in
+                .antMatchers("/trash-bin").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/toggle-share/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/directories/toggle-share/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.PUT, "/files/toggle-share/{id}").authenticated() // allowed only when signed in
@@ -58,10 +60,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/size/{id}").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.GET, "/search").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.GET, "/users/current").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.GET, "/users/rename").authenticated() // allowed only when signed in
-                .antMatchers(HttpMethod.GET, "/users/delete").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/users/rename").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.PUT, "/users/description").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.POST, "/users/delete").authenticated() // allowed only when signed in
+                .antMatchers(HttpMethod.POST, "/users/image").authenticated() // allowed only when signed in
                 .antMatchers(HttpMethod.GET, "/users/{username}").permitAll()
-                .antMatchers(HttpMethod.GET, "/users/all").permitAll()
+                .antMatchers(HttpMethod.GET, "/users").permitAll()
+                .antMatchers(HttpMethod.GET, "/users/").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/public").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/{username}").permitAll()

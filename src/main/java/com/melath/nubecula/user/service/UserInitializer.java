@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +35,7 @@ public class UserInitializer {
 
 
     @PostConstruct
+
     public void loadInitData() {
         if (userService.getUserRepository().count() == 0) {
             loadUsers();
@@ -42,7 +44,7 @@ public class UserInitializer {
 
 
     private void loadUsers() {
-        NubeculaUser admin = NubeculaUser.builder()
+        /*NubeculaUser admin = NubeculaUser.builder()
                 .username("admin")
                 .password(encoder.encode("admin"))
                 .role(Role.ADMIN)
@@ -52,11 +54,11 @@ public class UserInitializer {
                 .storage(999999999999L)
                 .inStorage(0L)
                 .build();
-        userService.add(admin);
-        Map<String, UUID> adminIds = fileDataService.createRootDirectory(admin);
-        admin.setRootDirectoryId(adminIds.get("root"));
-        admin.setTrashBinId(adminIds.get("trashBin"));
-        userService.add(admin);
+        NubeculaUser adminEntity = userService.getUserRepository().save(admin);
+        Map<String, UUID> adminIds = fileDataService.createRootDirectory(adminEntity);
+        adminEntity.setRootDirectoryId(adminIds.get("root"));
+        adminEntity.setTrashBinId(adminIds.get("trashBin"));
+        userService.add(adminEntity);
 
         NubeculaUser stofi = NubeculaUser.builder()
                 .username("Stofi")
@@ -68,10 +70,12 @@ public class UserInitializer {
                 .inStorage(0L)
                 .friend(admin)
                 .build();
-        userService.add(stofi);
-        Map<String, UUID> stofiIds = fileDataService.createRootDirectory(admin);
-        stofi.setRootDirectoryId(stofiIds.get("root"));
-        stofi.setTrashBinId(stofiIds.get("trashBin"));
-        userService.add(stofi);
+        NubeculaUser stofiEntity = userService.getUserRepository().save(stofi);
+        Map<String, UUID> stofiIds = fileDataService.createRootDirectory(stofiEntity);
+        stofiEntity.setRootDirectoryId(stofiIds.get("root"));
+        stofiEntity.setTrashBinId(stofiIds.get("trashBin"));
+        userService.add(stofiEntity);*/
+        userService.createUser("admin", "admin", "ize@hoze.com");
+        userService.createUser("Stofi", "stofi", "melath.stofi@gmail.com");
     }
 }

@@ -1,4 +1,4 @@
-package com.melath.nubecula.storage.service;
+package com.melath.nubecula.util;
 
 import com.melath.nubecula.storage.model.entity.NubeculaFile;
 import com.melath.nubecula.storage.model.reponse.ResponseFile;
@@ -14,23 +14,31 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-public class CreateResponse {
+public class ResponseCreator {
 
     @Value("${base.url}")
     private String baseUrl;
 
+
     @Transactional
     public List<ResponseFile> create(Stream<NubeculaFile> filesInDirectory) {
-        return filesInDirectory.map(nubeculaFile -> {
+        return filesInDirectory.map(file -> {
             ResponseFile responseFile;
-            if (nubeculaFile.isDirectory()) {
-                responseFile = createDir(nubeculaFile);
+            if (file.isDirectory()) {
+                responseFile = createDir(file);
             } else {
-                responseFile = createFile(nubeculaFile);
+                responseFile = createFile(file);
             }
             return responseFile;
         }).collect(Collectors.toList());
     }
+
+
+    @Transactional
+    public List<ResponseFile> createDir(Stream<NubeculaFile> dirsInDirectory) {
+        return dirsInDirectory.map(this::createDir).collect((Collectors.toList()));
+    }
+
 
     public ResponseFile createDir(NubeculaFile directory) {
         return ResponseFile.builder()
@@ -46,6 +54,7 @@ public class CreateResponse {
                 .url(baseUrl + "/" + directory.getId())
                 .build();
     }
+
 
     public ResponseFile createFile(NubeculaFile file) {
         return ResponseFile.builder()

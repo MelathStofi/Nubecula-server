@@ -1,19 +1,12 @@
 package com.melath.nubecula.storage.controller;
 
-import java.util.List;
 import java.util.UUID;
 
-import com.melath.nubecula.user.model.entity.NubeculaUser;
-import com.melath.nubecula.user.service.UserService;
+import com.melath.nubecula.storage.model.exception.*;
 import com.melath.nubecula.storage.model.entity.NubeculaFile;
-import com.melath.nubecula.storage.model.exception.NoSuchNubeculaFileException;
-import com.melath.nubecula.storage.model.exception.NotNubeculaDirectoryException;
-import com.melath.nubecula.storage.model.exception.StorageException;
-import com.melath.nubecula.storage.model.exception.StorageFileNotFoundException;
-import com.melath.nubecula.storage.model.reponse.ResponseFile;
 import com.melath.nubecula.storage.model.request.RequestAction;
-import com.melath.nubecula.storage.model.request.RequestDirectory;
-import com.melath.nubecula.storage.service.CreateResponse;
+import com.melath.nubecula.storage.model.request.RequestFile;
+import com.melath.nubecula.util.ResponseCreator;
 import com.melath.nubecula.storage.service.FileDataService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,27 +30,24 @@ public class FileCRUDController {
 
     private final FileDataService fileDataService;
 
-    private final UserService userService;
-
-    private final CreateResponse createResponse;
+    private final ResponseCreator responseCreator;
 
     @Autowired
     public FileCRUDController(
             StorageService storageService,
             FileDataService fileDataService,
-            UserService userService,
-            CreateResponse createResponse
+            ResponseCreator responseCreator
     ) {
         this.storageService = storageService;
         this.fileDataService = fileDataService;
-        this.userService = userService;
-        this.createResponse = createResponse;
+        this.responseCreator = responseCreator;
     }
+
 
     // RETRIEVE
     @GetMapping({"/{id}", "/"})
     @Transactional
-    public ResponseEntity<?> listUploadedFiles(
+    public ResponseEntity<?> listAll(
             @PathVariable(required = false) UUID id,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) boolean anywhere,
@@ -67,12 +57,10 @@ public class FileCRUDController {
     ) {
         String username = request.getUserPrincipal().getName();
         try {
-            NubeculaUser user = userService.getByName(username);
-            if (id == null) id = user.getRootDirectoryId();
             return ResponseEntity.ok().body(
                     search != null
-                            ? fileDataService.search(search, anywhere, user)
-                            : fileDataService.loadAll(id, sort, desc)
+                            ? fileDataService.search(username, search, anywhere)
+                            : fileDataService.loadAll(username, id, sort, desc)
             );
         } catch (StorageFileNotFoundException e) {
             handleStorageFileNotFound(e);
@@ -84,6 +72,25 @@ public class FileCRUDController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+
+    //RETRIEVE
+    @GetMapping({"/directories", "/directories/{id}"})
+    @Transactional
+    public ResponseEntity<?> listAllDirectories(
+            @PathVariable(required = false) UUID id,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            return ResponseEntity.ok().body(fileDataService.loadAllDirectories(username, id));
+        } catch (NotNubeculaDirectoryException e) {
+            return ResponseEntity.badRequest().body("ID: " + id + " not found");
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
     // RETRIEVE
     @GetMapping("/files/{id}")
@@ -103,31 +110,24 @@ public class FileCRUDController {
         }
     }
 
+
     // CREATE
     @PostMapping({"/{id}", "/", "/files/{id}", "/files"})
     public ResponseEntity<?> handleFileUpload(
             @PathVariable( required = false ) UUID id,
-            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("file") MultipartFile file,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
         try {
-            NubeculaUser user = userService.getByName(username);
-            if (id == null) id = user.getRootDirectoryId();
-            if (!userService.addToUserStorageSize(user, files)) throw new StorageException("Not enough space");
-            final UUID finalId = id;
-            ResponseFile[] responseFiles = new ResponseFile[files.size()];
-            for (int i = 0; i < files.size(); i++) {
-                NubeculaFile savedFile = fileDataService.store(finalId, files.get(i), user);
-                responseFiles[i] = createResponse.createFile(savedFile);
-                try {
-                    storageService.store(files.get(i), savedFile.getFileId());
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                    fileDataService.delete(savedFile.getId());
-                }
+            NubeculaFile savedFile = fileDataService.store(username, id, file);
+            try {
+                storageService.store(file, savedFile.getFileId());
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                fileDataService.delete(savedFile.getId());
             }
-            return ResponseEntity.ok().body(responseFiles);
+            return ResponseEntity.ok().body(responseCreator.createFile(savedFile));
         } catch (StorageException e) {
             log.error("FATAL: " + e.getMessage());
             return ResponseEntity.status(507).body(
@@ -138,22 +138,23 @@ public class FileCRUDController {
             return ResponseEntity.status(400).body("No such directory");
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (UserStorageException e) {
+            return ResponseEntity.badRequest().body("OUT OF STORAGE");
         }
     }
+
 
     // CREATE
     @PostMapping({"/directories/{id}", "/directories"})
     public ResponseEntity<?> createDirectory(
             @PathVariable( required = false ) UUID id,
-            @RequestBody RequestDirectory directory,
+            @RequestBody RequestFile directory,
             HttpServletRequest request
     ) {
         String dirname = directory.getName();
         String username = request.getUserPrincipal().getName();
         try {
-            NubeculaUser user = userService.getByName(username);
-            if (id == null) id = user.getRootDirectoryId();
-            return ResponseEntity.ok().body(fileDataService.createDirectory(id, dirname, user));
+            return ResponseEntity.ok().body(fileDataService.createDirectory(username, id, dirname));
         } catch (StorageException e) {
             log.error(username + ": CREATE_DIR in "+ id +" failed");
             return ResponseEntity.status(405).body("Directory already exists");
@@ -162,19 +163,16 @@ public class FileCRUDController {
         }
     }
 
+
     // UPDATE
     @PutMapping({"/{id}", "/", "/directories/{id}", "/directories", "/files/{id}", "/files"})
     public ResponseEntity<?> rename(
-            @RequestBody RequestDirectory directory,
+            @RequestBody RequestFile directory,
             @PathVariable( required = false ) UUID id,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
         try {
-            if (id == null) {
-                NubeculaUser user = userService.getByName(username);
-                id = user.getRootDirectoryId();
-            }
             fileDataService.rename(id, directory.getName());
             return ResponseEntity.ok().build();
         } catch (StorageException e) {
@@ -184,6 +182,7 @@ public class FileCRUDController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 
     // UPDATE
     @PutMapping({"/toggle-share/{id}", "/directories/toggle-share/{id}", "/files/toggle-share/{id}"})
@@ -196,27 +195,60 @@ public class FileCRUDController {
         }
     }
 
+
     // DELETE
     @DeleteMapping({"/{id}", "/directories/{id}", "/files{id}"})
     public ResponseEntity<?> delete(
             @PathVariable UUID id,
             HttpServletRequest request
     ) {
-        String username = request.getUserPrincipal().getName();
         try {
-            NubeculaFile file = fileDataService.load(id);
             fileDataService.delete(id);
-            return ResponseEntity.ok().body(
-                    file.isDirectory() ? createResponse.createDir(file) : createResponse.createFile(file)
-            );
+            return ResponseEntity.ok().build();
         }
         catch (NoSuchNubeculaFileException e){
-            log.error(username + ": DELETE "+ id +" failed" );
+            log.error(request.getUserPrincipal().getName() + ": DELETE "+ id +" failed" );
             return ResponseEntity.badRequest().body("No such file or directory");
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+
+    // RETRIEVE
+    @GetMapping("/trash-bin")
+    @Transactional
+    public ResponseEntity<?> listTrashBin(
+            @RequestParam(required = false, defaultValue = "filename") String sort,
+            @RequestParam(required = false, defaultValue = "false") boolean desc,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+
+        try {
+            return ResponseEntity.ok().body(fileDataService.loadTrashBin(username, sort, desc));
+        } catch (NoSuchNubeculaFileException | UsernameNotFoundException e) {
+            log.error(username + ": RETRIEVE TRASH_BIN failed");
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
+    // UPDATE
+    @PutMapping("/trash-bin")
+    public ResponseEntity<?> moveToTrashBin(
+            @RequestBody RequestAction requestAction,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            return ResponseEntity.ok().body(fileDataService.moveToTrashBin(username, requestAction.getFiles()));
+        } catch (NoSuchNubeculaFileException | UsernameNotFoundException e) {
+            log.error(username + ": REPLACE "+ requestAction.getFiles().toString() + " to trash bin failed");
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 
     // UPDATE
     @PutMapping({"/replace", "/directories/replace", "/files/replace"})
@@ -224,26 +256,19 @@ public class FileCRUDController {
             @RequestBody RequestAction requestAction,
             HttpServletRequest request
     ) {
-
         UUID targetDirId = requestAction.getTargetDirId();
         String username = request.getUserPrincipal().getName();
         try {
-            if (targetDirId == null) {
-                targetDirId = userService.getByName(username).getRootDirectoryId();
-            }
-            ResponseFile[] responseFiles = new ResponseFile[requestAction.getFiles().size()];
-            for (int i = 0; i < requestAction.getFiles().size(); i++) {
-                responseFiles[i] = fileDataService.replace(requestAction.getFiles().get(i).getId(), targetDirId);
-            }
-            return ResponseEntity.ok().body(responseFiles);
+            return ResponseEntity.ok().body(fileDataService.replace(username, requestAction.getFiles(), targetDirId));
         } catch (NoSuchNubeculaFileException | UsernameNotFoundException e) {
             log.error(username + ": REPLACE "+ requestAction.getFiles().toString() + " to " + targetDirId +" failed");
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
+
     // CREATE
-    @PutMapping({"/copy", "/directories/copy", "/files/copy"})
+    @PostMapping({"/copy", "/directories/copy", "/files/copy"})
     public ResponseEntity<?> copy(
             @RequestBody RequestAction requestAction,
             HttpServletRequest request
@@ -251,13 +276,7 @@ public class FileCRUDController {
         String username = request.getUserPrincipal().getName();
         UUID targetDirId = requestAction.getTargetDirId();
         try {
-            NubeculaUser user = userService.getByName(username);
-            if (targetDirId == null) targetDirId = fileDataService.load(user.getRootDirectoryId()).getId();
-            ResponseFile[] responseFiles = new ResponseFile[requestAction.getFiles().size()];
-            for (int i = 0; i < requestAction.getFiles().size(); i++) {
-                responseFiles[i] = fileDataService.copy(requestAction.getFiles().get(i).getId(), targetDirId, user);
-            }
-            return ResponseEntity.ok().body(responseFiles);
+            return ResponseEntity.ok().body(fileDataService.copy(username, requestAction.getFiles(), targetDirId));
         } catch (NoSuchNubeculaFileException | UsernameNotFoundException e) {
             log.error(username + ": COPY "+ requestAction.getFiles().toString() + " to " + targetDirId + " failed");
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -269,6 +288,7 @@ public class FileCRUDController {
             );
         }
     }
+
 
     //RETRIEVE
     @GetMapping("/size/{id}")

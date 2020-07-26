@@ -19,9 +19,9 @@ public class ResponseUser {
 
     private LocalDateTime registrationDate;
 
-    private long storage;
+    private String storage;
 
-    private long inStorage;
+    private String inStorage;
 
     private String description;
 }

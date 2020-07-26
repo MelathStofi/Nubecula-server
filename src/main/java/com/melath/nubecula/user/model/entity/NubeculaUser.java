@@ -7,16 +7,14 @@ import org.hibernate.annotations.CascadeType;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
-@Entity
-@Data
+@Entity(name = "user")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "user")
 public class NubeculaUser {
 
     @Id
@@ -38,6 +36,9 @@ public class NubeculaUser {
 
     private String description;
 
+    @Lob
+    private Byte[] profilePicture;
+
     @ManyToMany
     @JoinTable(name = "friends", joinColumns =@JoinColumn(name = "user_id"), inverseJoinColumns=@JoinColumn(name="friend_id"))
     @Singular
@@ -56,8 +57,128 @@ public class NubeculaUser {
     @CollectionTable(name="user_roles", joinColumns=@JoinColumn(name="user_id"))
     private List<Role> roles;
 
-    private UUID rootDirectoryId;
 
-    private UUID trashBinId;
+    public Integer getId() {
+        return id;
+    }
 
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public LocalDateTime getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public void setRegistrationDate(LocalDateTime registrationDate) {
+        this.registrationDate = registrationDate;
+    }
+
+    public long getStorage() {
+        return storage;
+    }
+
+    public void setStorage(long storage) {
+        this.storage = storage;
+    }
+
+    public long getInStorage() {
+        return inStorage;
+    }
+
+    public void setInStorage(long inStorage) {
+        this.inStorage = inStorage;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Byte[] getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(Byte[] profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    public Set<NubeculaUser> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(Set<NubeculaUser> friends) {
+        this.friends = friends;
+    }
+
+    public Set<NubeculaFile> getFiles() {
+        return files;
+    }
+
+    public void setFiles(Set<NubeculaFile> files) {
+        this.files = files;
+    }
+
+    public Set<NubeculaFile> getSharedFiles() {
+        return sharedFiles;
+    }
+
+    public void setSharedFiles(Set<NubeculaFile> sharedFiles) {
+        this.sharedFiles = sharedFiles;
+    }
+
+    public List<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<Role> roles) {
+        this.roles = roles;
+    }
+
+
+    @Override
+    public String toString() {
+        return "NubeculaUser{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", email='" + email + '\'' +
+                ", registrationDate=" + registrationDate +
+                ", storage=" + storage +
+                ", inStorage=" + inStorage +
+                ", description='" + description + '\'' +
+                ", profilePicture=" + Arrays.toString(profilePicture) +
+                ", friends=" + friends.toString() +
+                ", files=" + files.toString() +
+                ", sharedFiles=" + sharedFiles.toString() +
+                ", roles=" + roles.toString() +
+                '}';
+    }
 }
