@@ -8,34 +8,43 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public interface FileDataService {
-    NubeculaFile store(UUID parentDirId, MultipartFile file, NubeculaUser user);
 
-    List<ResponseFile> loadAll(UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException;
+    NubeculaFile store(String username, UUID parentDirId, MultipartFile file);
 
-    List<ResponseFile> loadAllShared(NubeculaUser user, String sort, boolean desc) throws UsernameNotFoundException;
+    List<ResponseFile> loadAll(String username, UUID id, String sort, boolean desc) throws NotNubeculaDirectoryException;
+
+    List<ResponseFile> loadAllShared(String username, UUID id, String sort, boolean desc) throws UsernameNotFoundException;
+
+    List<ResponseFile> loadAllDirectories(String username, UUID id);
+
+    List<ResponseFile> loadTrashBin(String username, String sort, boolean desc);
 
     NubeculaFile load(UUID id);
 
-    ResponseFile createDirectory(UUID parentDirId, String dirname, NubeculaUser user);
+    ResponseFile createDirectory(String username, UUID parentDirId, String dirname);
 
-    Map<String, UUID> createRootDirectory(NubeculaUser user);
+    void createDirectory(String dirname, NubeculaUser user);
 
     void rename(UUID id, String newName);
 
-    void delete(UUID id);
-
     void toggleShare(UUID id);
 
-    ResponseFile replace(UUID replaceableId, UUID targetDirId);
+    void delete(UUID id);
 
-    ResponseFile copy(UUID copiedId, UUID targetDirId, NubeculaUser user);
+    ResponseFile[] moveToTrashBin(String username, List<ResponseFile> replacedFiles);
+
+    ResponseFile[] replace(String username, List<ResponseFile> replacedFiles, UUID targetDirId);
+
+    ResponseFile[] copy(String username, List<ResponseFile> copiedFiles, UUID targetDirId);
 
     int getSizeOfDirectory(UUID directoryId);
 
-    List<ResponseFile> search(String searched, boolean anywhere, NubeculaUser user);
+    List<ResponseFile> search(String username, String searched, boolean anywhere);
 
+    List<ResponseFile> searchShared(String username, String searched, boolean anywhere);
+
+    void deleteUserData(String username);
 }

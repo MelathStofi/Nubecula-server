@@ -9,6 +9,8 @@ import com.melath.nubecula.user.model.exception.UsernameAlreadyExistsException;
 import com.melath.nubecula.user.repository.UserRepository;
 import com.melath.nubecula.user.model.response.ResponseUser;
 import com.melath.nubecula.storage.service.FileDataService;
+import com.melath.nubecula.util.NubeculaUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,13 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.transaction.Transactional;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class UserService {
 
     private final PasswordEncoder encoder;
@@ -37,7 +39,7 @@ public class UserService {
 
     private final FileDataService fileDataService;
 
-    private final long storageSize = 3000000000000L;
+    private final long storageSize = 3000000000L;
 
     @Autowired
     public UserService(
@@ -50,11 +52,6 @@ public class UserService {
         this.emailSenderService = emailSenderService;
         this.encoder = encoder;
         this.fileDataService = fileDataService;
-    }
-
-
-    public void add(NubeculaUser user) {
-        userRepository.save(user);
     }
 
 
@@ -83,9 +80,10 @@ public class UserService {
     }
 
 
-    public ResponseUser getPublicUser(String username) {
-        NubeculaUser user = getByName(username);
-        return createResponseUser(user);
+    public ResponseUser getPublicUser(String username) throws NoSuchUserException {
+        NubeculaUser user = userRepository.findFirstByUsername(username);
+        if (user == null) throw new NoSuchUserException("Username not found");
+        else return createResponseUser(user);
     }
 
 
@@ -93,6 +91,7 @@ public class UserService {
 
         String username = userCredentials.getUsername();
         String email = userCredentials.getEmail();
+        String password = userCredentials.getPassword();
 
         if (userRepository.findByUsername(username).isPresent()) {
             throw new UsernameAlreadyExistsException();
@@ -100,22 +99,47 @@ public class UserService {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyExistsException();
         }
-        NubeculaUser newUser = NubeculaUser
-                .builder()
+
+        createUser(username, password, email);
+        emailSenderService.sendEmail(email, username);
+    }
+
+
+    public void createUser(String username, String password, String email) {
+        NubeculaUser newUser = NubeculaUser.builder()
                 .username(username)
-                .password(encoder.encode(userCredentials.getPassword()))
+                .password(encoder.encode(password))
                 .role(Role.USER)
                 .email(email)
                 .registrationDate(LocalDateTime.now())
                 .storage(storageSize)
                 .inStorage(0L)
                 .build();
-        userRepository.save(newUser);
-        Map<String, UUID> ids = fileDataService.createRootDirectory(newUser);
-        newUser.setRootDirectoryId(ids.get("root"));
-        newUser.setTrashBinId(ids.get("trashBin"));
-        userRepository.save(newUser);
-        emailSenderService.sendEmail(email, username);
+        NubeculaUser useEntity = userRepository.saveAndFlush(newUser);
+        fileDataService.createDirectory("root directory", useEntity);
+        fileDataService.createDirectory("trash bin", useEntity);
+    }
+
+
+    @Transactional
+    public List<ResponseUser> searchUser(String searched, boolean anywhere) {
+        if (anywhere) return userRepository.searchUsersAnywhere(searched).map(this::createResponseUser
+        ).collect(Collectors.toList());
+        return userRepository.searchUsersBeginning(searched).map(this::createResponseUser
+        ).collect(Collectors.toList());
+    }
+
+
+    public Byte[] storeProfilePicture(String username, MultipartFile file) throws IOException {
+        NubeculaUser user = getByName(username);
+        Byte[] byteObjects = new Byte[file.getBytes().length];
+        int i = 0;
+        for (byte b : file.getBytes()){
+            byteObjects[i++] = b;
+        }
+        user.setProfilePicture(byteObjects);
+        return userRepository.save(user).getProfilePicture();
+
     }
 
 
@@ -123,7 +147,6 @@ public class UserService {
         NubeculaUser user = getByName(username);
         user.setUsername(newName);
         userRepository.save(user);
-        fileDataService.rename(user.getRootDirectoryId(), newName);
     }
 
 
@@ -136,7 +159,7 @@ public class UserService {
 
     public void deleteUser(String username) {
         NubeculaUser user = getByName(username);
-        fileDataService.delete(user.getRootDirectoryId());
+        fileDataService.deleteUserData(username);
         userRepository.delete(user);
     }
 
@@ -146,8 +169,9 @@ public class UserService {
     }
 
 
-    public boolean addToUserStorageSize(NubeculaUser user, List<MultipartFile> files) throws UsernameNotFoundException {
-        long sumSize = files.stream().mapToLong(MultipartFile::getSize).sum() + user.getInStorage();
+    public boolean addToUserStorageSize(String username, MultipartFile file) throws UsernameNotFoundException {
+        NubeculaUser user = getByName(username);
+        long sumSize = file.getSize() + user.getInStorage();
         if (user.getStorage() >= sumSize) {
             user.setInStorage(sumSize);
             userRepository.save(user);
@@ -157,7 +181,8 @@ public class UserService {
     }
 
 
-    public boolean addToUserStorageSize(NubeculaUser user, long size) throws UsernameNotFoundException {
+    public boolean addToUserStorageSize(String username, long size) throws UsernameNotFoundException {
+        NubeculaUser user = getByName(username);
         long sumSize = user.getInStorage() + size;
         if (user.getStorage() >= sumSize) {
             user.setInStorage(sumSize);
@@ -183,8 +208,8 @@ public class UserService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .registrationDate(user.getRegistrationDate())
-                .storage(user.getStorage())
-                .inStorage(user.getInStorage())
+                .storage(NubeculaUtils.getSizeString(user.getStorage()))
+                .inStorage(NubeculaUtils.getSizeString(user.getInStorage()))
                 .description(user.getDescription())
                 .build();
     }

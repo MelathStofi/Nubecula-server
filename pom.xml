@@ -108,6 +108,14 @@
             <version>RELEASE</version>
         </dependency>
 
+        <!-- image handling library -->
+
+        <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij</artifactId>
+            <version>1.51h</version>
+        </dependency>
+
     </dependencies>
 
     <build>
