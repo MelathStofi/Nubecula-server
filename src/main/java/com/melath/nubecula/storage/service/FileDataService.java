@@ -1,5 +1,6 @@
 package com.melath.nubecula.storage.service;
 
+import com.melath.nubecula.storage.model.exception.NoSuchNubeculaFileException;
 import com.melath.nubecula.user.model.entity.NubeculaUser;
 import com.melath.nubecula.storage.model.entity.NubeculaFile;
 import com.melath.nubecula.storage.model.exception.NotNubeculaDirectoryException;
@@ -21,6 +22,10 @@ public interface FileDataService {
     List<ResponseFile> loadAllDirectories(String username, UUID id);
 
     List<ResponseFile> loadTrashBin(String username, String sort, boolean desc);
+
+    ResponseFile loadDirectory(String username, UUID id) throws NoSuchNubeculaFileException;
+
+    ResponseFile loadSharedDirectory(String username, UUID id) throws NoSuchNubeculaFileException;
 
     NubeculaFile load(UUID id);
 

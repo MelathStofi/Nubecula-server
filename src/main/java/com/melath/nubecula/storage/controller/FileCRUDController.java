@@ -144,6 +144,21 @@ public class FileCRUDController {
     }
 
 
+    //RETRIEVE
+    @GetMapping({"/directories/directory", "/directories/directory/{id}"})
+    public ResponseEntity<?> getDirectory(
+            @PathVariable(required = false) UUID id,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            return ResponseEntity.ok().body(fileDataService.loadDirectory(username, id));
+        } catch (NoSuchNubeculaFileException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
     // CREATE
     @PostMapping({"/directories/{id}", "/directories"})
     public ResponseEntity<?> createDirectory(

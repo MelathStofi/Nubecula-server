@@ -27,6 +27,8 @@ public interface FileRepository extends JpaRepository<NubeculaFile, UUID>, FileR
             Sort sort
     );
 
+    NubeculaFile findByIdAndOwnerUsernameAndSharedIsTrue(UUID id, String username);
+
 
     @Query(value="SELECT f FROM file f WHERE f.parentDirectory.id IS NOT NULL AND f.owner.id = :ownerId AND f.filename LIKE %:searched% ORDER BY f.isDirectory DESC, f.filename")
     Stream<NubeculaFile> searchByFilenameAnywhere(@Param("searched") String searched, @Param("ownerId") int ownerId);

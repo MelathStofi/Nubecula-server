@@ -21,7 +21,6 @@ import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class JpaRepoFileDataService implements FileDataService {
@@ -203,6 +202,20 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
+    public ResponseFile loadDirectory(String username, UUID id) throws NoSuchNubeculaFileException {
+        return responseCreator.createDir(id != null ? load(id) : getRoot(username));
+    }
+
+
+    @Override
+    public ResponseFile loadSharedDirectory(String username, UUID id) throws NoSuchNubeculaFileException {
+        NubeculaFile requestedDirectory = fileRepository.findByIdAndOwnerUsernameAndSharedIsTrue(id, username);
+        if (requestedDirectory == null) throw new NoSuchNubeculaFileException("No such directory");
+        return responseCreator.createDir(requestedDirectory);
+    }
+
+
+    @Override
     @Transactional
     public List<ResponseFile> loadAll(
             String username, UUID id, String sort, boolean desc
@@ -213,17 +226,6 @@ public class JpaRepoFileDataService implements FileDataService {
         return responseCreator.create(fileRepository.findAllByParentDirectoryId(dir.getId(), sortQuery));
     }
 
-
-    private Sort getSort(String sort, boolean desc) {
-        if (desc) return Sort.by(
-                Sort.Order.desc("isDirectory"),
-                Sort.Order.desc(sort)
-        );
-        else return Sort.by(
-                Sort.Order.desc("isDirectory"),
-                Sort.Order.asc(sort)
-        );
-    }
 
 
     @Override
@@ -246,7 +248,7 @@ public class JpaRepoFileDataService implements FileDataService {
     public List<ResponseFile> loadAllDirectories(String username, UUID id) {
         NubeculaFile dir = getOperableDir(username, id);
         if (dir == null || !dir.isDirectory()) throw new NotNubeculaDirectoryException("Not a directory");
-        return responseCreator.createDir(fileRepository.findAllDirectoriesByParentDirectoryId(dir.getId()));
+        return responseCreator.createDirs(fileRepository.findAllDirectoriesByParentDirectoryId(dir.getId()));
     }
 
 
@@ -285,6 +287,18 @@ public class JpaRepoFileDataService implements FileDataService {
             else sum += file.getSize();
         }
         return sum;
+    }
+
+
+    private Sort getSort(String sort, boolean desc) {
+        if (desc) return Sort.by(
+                Sort.Order.desc("isDirectory"),
+                Sort.Order.desc(sort)
+        );
+        else return Sort.by(
+                Sort.Order.desc("isDirectory"),
+                Sort.Order.asc(sort)
+        );
     }
 
 

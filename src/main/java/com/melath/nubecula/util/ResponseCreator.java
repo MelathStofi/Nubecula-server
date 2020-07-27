@@ -35,7 +35,7 @@ public class ResponseCreator {
 
 
     @Transactional
-    public List<ResponseFile> createDir(Stream<NubeculaFile> dirsInDirectory) {
+    public List<ResponseFile> createDirs(Stream<NubeculaFile> dirsInDirectory) {
         return dirsInDirectory.map(this::createDir).collect((Collectors.toList()));
     }
 
