@@ -49,7 +49,11 @@ public class ResponseCreator {
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
                 .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getModificationDate()))
                 .isDirectory(true)
-                .parentDirectoryId(directory.getParentDirectory().getId())
+                .parentDirectoryId(
+                    !directory.getParentDirectory().getType().equals("root directory")
+                    ? directory.getParentDirectory().getId()
+                    : null
+                )
                 .shared(directory.isShared())
                 .url(baseUrl + "/" + directory.getId())
                 .build();
