@@ -332,17 +332,7 @@ public class JpaRepoFileDataService implements FileDataService {
     public void toggleShare(UUID id) {
         NubeculaFile virtualPath = load(id);
         if (virtualPath == null) throw new NoSuchNubeculaFileException("No such file or directory");
-        if (virtualPath.isDirectory()) {
-            for (NubeculaFile file : virtualPath.getNubeculaFiles()) {
-                if (file.isDirectory()) {
-                    toggleShare(file.getId());
-                } else {
-                    file.setShared(!file.isShared());
-                }
-            }
-        }
-        virtualPath.setShared(!virtualPath.isShared());
-        fileRepository.save(virtualPath);
+        setFileSharedAttribute(virtualPath, !virtualPath.isShared());
     }
 
 
