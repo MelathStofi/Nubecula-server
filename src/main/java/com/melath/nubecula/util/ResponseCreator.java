@@ -70,7 +70,11 @@ public class ResponseCreator {
                 .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
                 .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getModificationDate()))
                 .isDirectory(false)
-                .parentDirectoryId(file.getParentDirectory().getId())
+                .parentDirectoryId(file.getParentDirectory().getId()
+//                    !file.getParentDirectory().getType().equals("root directory")
+//                    ? file.getParentDirectory().getId()
+//                    : null
+                )
                 .shared(file.isShared())
                 .url(baseUrl + "/files/" + file.getId())
                 .build();

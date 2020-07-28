@@ -163,6 +163,10 @@ public class JpaRepoFileDataService implements FileDataService {
         copied.setModificationDate(LocalDateTime.now());
         copied.setShared(false);
         copied.setParentDirectory(targetDir);
+        setFileSharedAttribute(copied, targetDir.isShared());
+        if (!copied.getOwner().getId().equals(targetDir.getOwner().getId())) {
+            copied.setOwner(targetDir.getOwner());
+        }
         return fileRepository.save(copied);
     }
 
@@ -378,8 +382,7 @@ public class JpaRepoFileDataService implements FileDataService {
     private ResponseFile replaceOne(NubeculaFile replaced, NubeculaFile targetDir) {
         if (replaced == null) throw new NoSuchNubeculaFileException("replaced file ID not found");
         replaced.setParentDirectory(targetDir);
-        if (targetDir.isShared()) setFileSharedAttribute(replaced, true);
-        else if (!targetDir.isShared()) setFileSharedAttribute(replaced, false);
+        setFileSharedAttribute(replaced, targetDir.isShared());
         NubeculaFile savedFile = fileRepository.save(replaced);
         if (replaced.isDirectory())
             return responseCreator.createDir(savedFile);
