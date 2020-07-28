@@ -178,6 +178,15 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
+    public NubeculaFile loadShared(UUID id) {
+        NubeculaFile file = fileRepository.findByIdAndSharedIsTrue(id).orElse(null);
+        if (file == null) throw new NoSuchNubeculaFileException("File not found");
+        return file;
+
+    }
+
+
+    @Override
     @Transactional
     public List<ResponseFile> loadTrashBin(String username, String sort, boolean desc) {
         NubeculaFile trashBin = getTrashBin(username);
@@ -337,6 +346,20 @@ public class JpaRepoFileDataService implements FileDataService {
     }
 
 
+    public void setFileSharedAttribute(NubeculaFile virtualPath, boolean isShared) {
+        if (virtualPath.isDirectory()) {
+            for (NubeculaFile file : virtualPath.getNubeculaFiles()) {
+                if (file.isDirectory()) {
+                    setFileSharedAttribute(file, isShared);
+                } else {
+                    file.setShared(isShared);
+                }
+            }
+        }
+        virtualPath.setShared(isShared);
+        fileRepository.saveAndFlush(virtualPath);
+    }
+
 
     @Override
     public ResponseFile[] moveToTrashBin(String username, List<ResponseFile> replacedFiles) {
@@ -365,8 +388,8 @@ public class JpaRepoFileDataService implements FileDataService {
     private ResponseFile replaceOne(NubeculaFile replaced, NubeculaFile targetDir) {
         if (replaced == null) throw new NoSuchNubeculaFileException("replaced file ID not found");
         replaced.setParentDirectory(targetDir);
-        if (targetDir.isShared()) replaced.setShared(true);
-        else if (!targetDir.isShared()) replaced.setShared(false);
+        if (targetDir.isShared()) setFileSharedAttribute(replaced, true);
+        else if (!targetDir.isShared()) setFileSharedAttribute(replaced, false);
         NubeculaFile savedFile = fileRepository.save(replaced);
         if (replaced.isDirectory())
             return responseCreator.createDir(savedFile);

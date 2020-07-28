@@ -73,6 +73,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/public").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/{username}").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/{username}/directories/directory/{id}").permitAll()
+                .antMatchers(HttpMethod.GET, "/public/{username}/files/{id}").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/search").permitAll()
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:

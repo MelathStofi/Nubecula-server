@@ -29,6 +29,8 @@ public interface FileDataService {
 
     NubeculaFile load(UUID id);
 
+    NubeculaFile loadShared(UUID id);
+
     ResponseFile createDirectory(String username, UUID parentDirId, String dirname);
 
     void createDirectory(String dirname, NubeculaUser user);

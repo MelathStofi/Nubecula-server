@@ -95,7 +95,7 @@ public class FileCRUDController {
     // RETRIEVE
     @GetMapping("/files/{id}")
     public ResponseEntity<Resource> serveFile(
-            @PathVariable( required = false ) UUID id,
+            @PathVariable UUID id,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
