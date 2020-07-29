@@ -43,6 +43,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/directories").authenticated() // allowed only when signed in
                 .antMatchers("/directories/").authenticated() // allowed only when signed in
                 .antMatchers("/directories/{id}").authenticated() // allowed only when signed in
+                .antMatchers("/directories/directory").authenticated() // allowed only when signed in
+                .antMatchers("/directories/directory/{id}").authenticated() // allowed only when signed in
                 .antMatchers("/files").authenticated() // allowed only when signed in
                 .antMatchers("/files/").authenticated() // allowed only when signed in
                 .antMatchers("/files/{id}").authenticated() // allowed only when signed in
@@ -70,6 +72,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(HttpMethod.GET, "/public/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/public").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/{username}").permitAll()
+                .antMatchers(HttpMethod.GET, "/public/{username}/directories/directory/{id}").permitAll()
+                .antMatchers(HttpMethod.GET, "/public/{username}/files/{id}").permitAll()
                 .antMatchers(HttpMethod.GET, "/public/search").permitAll()
                 .anyRequest().denyAll() // anything else is denied
                 // NEW PART:

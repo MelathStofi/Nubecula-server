@@ -95,7 +95,7 @@ public class FileCRUDController {
     // RETRIEVE
     @GetMapping("/files/{id}")
     public ResponseEntity<Resource> serveFile(
-            @PathVariable( required = false ) UUID id,
+            @PathVariable UUID id,
             HttpServletRequest request
     ) {
         String username = request.getUserPrincipal().getName();
@@ -140,6 +140,21 @@ public class FileCRUDController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (UserStorageException e) {
             return ResponseEntity.badRequest().body("OUT OF STORAGE");
+        }
+    }
+
+
+    //RETRIEVE
+    @GetMapping({"/directories/directory", "/directories/directory/{id}"})
+    public ResponseEntity<?> getDirectory(
+            @PathVariable(required = false) UUID id,
+            HttpServletRequest request
+    ) {
+        String username = request.getUserPrincipal().getName();
+        try {
+            return ResponseEntity.ok().body(fileDataService.loadDirectory(username, id));
+        } catch (NoSuchNubeculaFileException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

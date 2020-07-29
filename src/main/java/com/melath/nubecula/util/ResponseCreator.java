@@ -35,7 +35,7 @@ public class ResponseCreator {
 
 
     @Transactional
-    public List<ResponseFile> createDir(Stream<NubeculaFile> dirsInDirectory) {
+    public List<ResponseFile> createDirs(Stream<NubeculaFile> dirsInDirectory) {
         return dirsInDirectory.map(this::createDir).collect((Collectors.toList()));
     }
 
@@ -46,10 +46,14 @@ public class ResponseCreator {
                 .filename(directory.getFilename())
                 .type(directory.getType())
                 .size(NubeculaUtils.getSizeString(directory.getSize()))
-                .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
-                .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getModificationDate()))
+                .createDate(NubeculaUtils.getDateString(directory.getCreateDate()))
+                .modificationDate(NubeculaUtils.getDateString(directory.getModificationDate()))
                 .isDirectory(true)
-                .parentDirectoryId(directory.getParentDirectory().getId())
+                .parentDirectoryId(
+                        !directory.getParentDirectory().getType().equals("root directory")
+                                ? directory.getParentDirectory().getId()
+                                : null
+                )
                 .shared(directory.isShared())
                 .url(baseUrl + "/" + directory.getId())
                 .build();
@@ -63,8 +67,8 @@ public class ResponseCreator {
                 .type(file.getType())
                 .extension(file.getExtension())
                 .size(NubeculaUtils.getSizeString(file.getSize()))
-                .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
-                .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getModificationDate()))
+                .createDate(NubeculaUtils.getDateString(file.getCreateDate()))
+                .modificationDate(NubeculaUtils.getDateString(file.getModificationDate()))
                 .isDirectory(false)
                 .parentDirectoryId(file.getParentDirectory().getId())
                 .shared(file.isShared())

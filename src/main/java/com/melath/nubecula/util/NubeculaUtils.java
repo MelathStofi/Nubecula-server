@@ -2,6 +2,9 @@ package com.melath.nubecula.util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -19,6 +22,11 @@ public class NubeculaUtils {
             return BigDecimal.valueOf(size).divide(BigDecimal.valueOf(1000), 1, RoundingMode.HALF_UP) + "KB";
         }
         return size + "B";
+    }
+
+
+    public static String getDateString(LocalDateTime dateTime) {
+        return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(dateTime);
     }
 
 

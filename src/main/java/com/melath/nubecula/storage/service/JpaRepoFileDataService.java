@@ -21,7 +21,6 @@ import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class JpaRepoFileDataService implements FileDataService {
@@ -164,6 +163,10 @@ public class JpaRepoFileDataService implements FileDataService {
         copied.setModificationDate(LocalDateTime.now());
         copied.setShared(false);
         copied.setParentDirectory(targetDir);
+        setFileSharedAttribute(copied, targetDir.isShared());
+        if (!copied.getOwner().getId().equals(targetDir.getOwner().getId())) {
+            copied.setOwner(targetDir.getOwner());
+        }
         return fileRepository.save(copied);
     }
 
@@ -175,6 +178,15 @@ public class JpaRepoFileDataService implements FileDataService {
         NubeculaFile file = fileRepository.findById(id).orElse(null);
         if (file == null) throw new NoSuchNubeculaFileException("There is no file with id " + id);
         return file;
+    }
+
+
+    @Override
+    public NubeculaFile loadShared(UUID id) {
+        NubeculaFile file = fileRepository.findByIdAndSharedIsTrue(id).orElse(null);
+        if (file == null) throw new NoSuchNubeculaFileException("File not found");
+        return file;
+
     }
 
 
@@ -203,6 +215,20 @@ public class JpaRepoFileDataService implements FileDataService {
 
 
     @Override
+    public ResponseFile loadDirectory(String username, UUID id) throws NoSuchNubeculaFileException {
+        return responseCreator.createDir(id != null ? load(id) : getRoot(username));
+    }
+
+
+    @Override
+    public ResponseFile loadSharedDirectory(String username, UUID id) throws NoSuchNubeculaFileException {
+        NubeculaFile requestedDirectory = fileRepository.findByIdAndOwnerUsernameAndSharedIsTrue(id, username);
+        if (requestedDirectory == null) throw new NoSuchNubeculaFileException("No such directory");
+        return responseCreator.createDir(requestedDirectory);
+    }
+
+
+    @Override
     @Transactional
     public List<ResponseFile> loadAll(
             String username, UUID id, String sort, boolean desc
@@ -213,17 +239,6 @@ public class JpaRepoFileDataService implements FileDataService {
         return responseCreator.create(fileRepository.findAllByParentDirectoryId(dir.getId(), sortQuery));
     }
 
-
-    private Sort getSort(String sort, boolean desc) {
-        if (desc) return Sort.by(
-                Sort.Order.desc("isDirectory"),
-                Sort.Order.desc(sort)
-        );
-        else return Sort.by(
-                Sort.Order.desc("isDirectory"),
-                Sort.Order.asc(sort)
-        );
-    }
 
 
     @Override
@@ -246,7 +261,7 @@ public class JpaRepoFileDataService implements FileDataService {
     public List<ResponseFile> loadAllDirectories(String username, UUID id) {
         NubeculaFile dir = getOperableDir(username, id);
         if (dir == null || !dir.isDirectory()) throw new NotNubeculaDirectoryException("Not a directory");
-        return responseCreator.createDir(fileRepository.findAllDirectoriesByParentDirectoryId(dir.getId()));
+        return responseCreator.createDirs(fileRepository.findAllDirectoriesByParentDirectoryId(dir.getId()));
     }
 
 
@@ -288,6 +303,18 @@ public class JpaRepoFileDataService implements FileDataService {
     }
 
 
+    private Sort getSort(String sort, boolean desc) {
+        if (desc) return Sort.by(
+                Sort.Order.desc("isDirectory"),
+                Sort.Order.desc(sort)
+        );
+        else return Sort.by(
+                Sort.Order.desc("isDirectory"),
+                Sort.Order.asc(sort)
+        );
+    }
+
+
     /* <------------------------------------------- UPDATE -------------------------------------------> */
 
     @Override
@@ -309,19 +336,23 @@ public class JpaRepoFileDataService implements FileDataService {
     public void toggleShare(UUID id) {
         NubeculaFile virtualPath = load(id);
         if (virtualPath == null) throw new NoSuchNubeculaFileException("No such file or directory");
+        setFileSharedAttribute(virtualPath, !virtualPath.isShared());
+    }
+
+
+    public void setFileSharedAttribute(NubeculaFile virtualPath, boolean isShared) {
         if (virtualPath.isDirectory()) {
             for (NubeculaFile file : virtualPath.getNubeculaFiles()) {
                 if (file.isDirectory()) {
-                    toggleShare(file.getId());
+                    setFileSharedAttribute(file, isShared);
                 } else {
-                    file.setShared(!file.isShared());
+                    file.setShared(isShared);
                 }
             }
         }
-        virtualPath.setShared(!virtualPath.isShared());
-        fileRepository.save(virtualPath);
+        virtualPath.setShared(isShared);
+        fileRepository.saveAndFlush(virtualPath);
     }
-
 
 
     @Override
@@ -351,8 +382,7 @@ public class JpaRepoFileDataService implements FileDataService {
     private ResponseFile replaceOne(NubeculaFile replaced, NubeculaFile targetDir) {
         if (replaced == null) throw new NoSuchNubeculaFileException("replaced file ID not found");
         replaced.setParentDirectory(targetDir);
-        if (targetDir.isShared()) replaced.setShared(true);
-        else if (!targetDir.isShared()) replaced.setShared(false);
+        setFileSharedAttribute(replaced, targetDir.isShared());
         NubeculaFile savedFile = fileRepository.save(replaced);
         if (replaced.isDirectory())
             return responseCreator.createDir(savedFile);
