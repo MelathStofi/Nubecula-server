@@ -46,13 +46,13 @@ public class ResponseCreator {
                 .filename(directory.getFilename())
                 .type(directory.getType())
                 .size(NubeculaUtils.getSizeString(directory.getSize()))
-                .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getCreateDate()))
-                .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(directory.getModificationDate()))
+                .createDate(NubeculaUtils.getDateString(directory.getCreateDate()))
+                .modificationDate(NubeculaUtils.getDateString(directory.getModificationDate()))
                 .isDirectory(true)
                 .parentDirectoryId(
-                    !directory.getParentDirectory().getType().equals("root directory")
-                    ? directory.getParentDirectory().getId()
-                    : null
+                        !directory.getParentDirectory().getType().equals("root directory")
+                                ? directory.getParentDirectory().getId()
+                                : null
                 )
                 .shared(directory.isShared())
                 .url(baseUrl + "/" + directory.getId())
@@ -67,14 +67,10 @@ public class ResponseCreator {
                 .type(file.getType())
                 .extension(file.getExtension())
                 .size(NubeculaUtils.getSizeString(file.getSize()))
-                .createDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getCreateDate()))
-                .modificationDate(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).format(file.getModificationDate()))
+                .createDate(NubeculaUtils.getDateString(file.getCreateDate()))
+                .modificationDate(NubeculaUtils.getDateString(file.getModificationDate()))
                 .isDirectory(false)
-                .parentDirectoryId(file.getParentDirectory().getId()
-//                    !file.getParentDirectory().getType().equals("root directory")
-//                    ? file.getParentDirectory().getId()
-//                    : null
-                )
+                .parentDirectoryId(file.getParentDirectory().getId())
                 .shared(file.isShared())
                 .url(baseUrl + "/files/" + file.getId())
                 .build();
