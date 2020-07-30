@@ -18,7 +18,7 @@ public class CrossOriginConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**").allowedOrigins(allowedOrigin)
-                        .allowedMethods("*").allowCredentials(true);
+                        .allowedMethods("*").allowCredentials(true).allowedHeaders("*");
             }
         };
     }

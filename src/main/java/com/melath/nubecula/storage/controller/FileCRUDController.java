@@ -93,6 +93,7 @@ public class FileCRUDController {
 
 
     // RETRIEVE
+    @CrossOrigin
     @GetMapping("/files/{id}")
     public ResponseEntity<Resource> serveFile(
             @PathVariable UUID id,
