@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,6 +72,7 @@ public class PublicFileController {
         }
     }
 
+    @CrossOrigin
     @GetMapping("/{username}/files/{id}")
     public ResponseEntity<Resource> serveFile(
             @PathVariable String username,
@@ -87,6 +90,17 @@ public class PublicFileController {
         } catch (NoSuchNubeculaFileException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+
+    // RETRIEVE
+    @CrossOrigin
+    @GetMapping(path = "/media/{id}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> serveFile(
+            @PathVariable UUID id
+    ) {
+        String fileId = fileDataService.load(id).getFileId().toString();
+        return ResponseEntity.ok().body(storageService.loadAsResource(fileId));
     }
 
 }
