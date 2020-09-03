@@ -1,5 +1,5 @@
 # Nubecula-server
-It is the api of the Nubecula application for file-transfering, file-uploading/downloading.
+This is the api of the Nubecula application for file-transfering, file-uploading/downloading.
 It is implemented with Spring boot. the dtatabase is MySql.
 
 Use:
