@@ -208,8 +208,8 @@ public class UserService {
                 .id(user.getId())
                 .username(user.getUsername())
                 .registrationDate(user.getRegistrationDate())
-                .storage(NubeculaUtils.getSizeString(user.getStorage()))
-                .inStorage(NubeculaUtils.getSizeString(user.getInStorage()))
+                .storage(user.getStorage())
+                .inStorage(user.getInStorage())
                 .description(user.getDescription())
                 .build();
     }
